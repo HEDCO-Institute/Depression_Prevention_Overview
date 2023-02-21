@@ -76,7 +76,7 @@ To replicate our results:
 **If you have Rstudio and Git installed and connected to your GitHub account:**
 
 1. Clone this repository to your local machine ([click for help](https://book.cds101.com/using-rstudio-server-to-clone-a-github-repo-as-a-new-project.html#step---2))
-1. `Run Analysis_Script.Rmd`
+1. Run `Analysis_Script.Rmd`
 
 **If you need to install or connect R, Rstudio, Git, and/or GitHub:**
 
@@ -104,5 +104,5 @@ To replicate our results:
 
 ## Contact
 
-If you have any questions, concerns, or feedback, feel free to email Shaina Trevino at [strevino\@uoregon.edu](mailto:strevino@uoregon.edu){.email}
+If you have any questions, concerns, or feedback, feel free to email Shaina Trevino at [strevino\@uoregon.edu](mailto:strevino@uoregon.edu)
 
