@@ -34,7 +34,7 @@ The excel data and codebook for this overview are publicly available at <https:/
 |-----------|:----------:|-------------|-----------| 
 | Depression_Overview_FileMaker_Data.xlsx | reference_level | Abstract and full-text screening decisions | One row per reference ID (citation) |
 | Depression_Overview_FileMaker_Data.xlsx | review_level | Extracted descriptive data on eligible reviews | One row per review ID (systematic review)|
-| Depression_Overview_FileMaker_Data.xlsx | amstar| AMSTAR risk of bias assessment | One row per review ID |
+| Depression_Overview_FileMaker_Data.xlsx | amstar| AMSTAR study quality assessment | One row per review ID |
 | Depression_Overview_FileMaker_Data.xlsx | robis | ROBIS risk of bias assessment | One row per review ID |
 <br>
 
