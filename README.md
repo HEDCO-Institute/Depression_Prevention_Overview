@@ -1,11 +1,4 @@
----
-title: "Depression Prevention Overview Repository"
-output: 
-  html_document:
-   embed_resources: true
-   standalone: true
----
-
+## Depression Prevention Overview Repository
 
 This repository contains the data and R code to reproduce the results of our Depression Prevention Overview titled "School Based Interventions for Primary and Secondary Prevention of Depression: An Overview of Systematic Reviews with Meta-Analyses." <br>
 Additional materials, including the protocol, **codebook**, and **report** are available at <https://osf.io/c7nyz/>.
