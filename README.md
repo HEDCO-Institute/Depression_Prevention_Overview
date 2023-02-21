@@ -67,7 +67,7 @@ All code necessary to reproduce our findings are included in one main Rmarkdown 
 
 - Analysis_Script.Rmd
 
-This file is organized to present results in the order in which they appear in our report, "School Based Interventions for Primary and Secondary Prevention of Depression: An Overview of Systematic Reviews with Meta-Analyses," with corresponding section headers.  
+This file is organized to present results in the order in which they appear in our report, "School Based Interventions for Primary and Secondary Prevention of Depression: An Overview of Systematic Reviews with Meta-Analyses," with corresponding section headers. There are also embedded comments and contextual information to help the user understand analysis steps and code chunks.  
 
 ## Replication Steps
 
