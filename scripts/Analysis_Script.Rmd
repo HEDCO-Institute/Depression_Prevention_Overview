@@ -20,85 +20,111 @@ p_load_gh("thdiakon/ccaR", "mcguinlu/robvis") #from github
 
 ## Import
 
-Import primary study eligibility data from `Eligibility_Data.xlsx`
- * Eligibility_Decisions: One row per primary study, data for eligibility decisions and reasons for exclude, when applicable
- * Reports: One row per reference, data for multiple reports/citations of a single primary study, when applicable
- * Citation_Matrix: One row per primary study, data on primary study overlap (which primary studies were included in each review)
+Import review-level reference and eligibility screening data in `Depression_Overview_Search_Data.xlsx`
+* `reference_level`: One row per reference ID screened, abstract and eligibility decisions (all imported review citations)
+
+```{r import-reference-level}
+#set path to search data
+search_path <- (here("data", "Depression_Overview_Search_Data.xlsx"))
+
+#import reference_level excel sheet
+reference_level <- read_excel(search_path, sheet = "reference_level",
+                                      guess_max = 123456) 
+
+```
+
+Import primary study reference and eligibility screening data from `Depression_Overview_Eligibility_Data.xlsx`
+ * `eligibility_decisions`: One row per primary study, data for eligibility decisions and reasons for exclude, when applicable
+ * `reports`: One row per reference, data for multiple reports/citations of a single primary study, when applicable
+ * `citation_matrix`: One row per primary study, data on primary study overlap (which primary studies were included in each review)
 
 ```{r import-pselig}
 #set path to eligibility data
-elig_path <-here("data", "Eligibility_Data.xlsx")
+elig_path <- here("data", "Depression_Overview_Eligibility_Data.xlsx")
 
-#Import eligibility_decisions sheet of excel file and delete summed rows (last 4 rows)  
-ps_eligibility <- read_excel(elig_path, sheet = "Eligibility_Decisions") %>% 
-  filter(row_number() <= n()-4) %>% 
-  janitor::clean_names() #make column names lowercase
+#import eligibility_decisions sheet of excel file 
+ps_eligibility <- read_excel(elig_path, sheet = "eligibility_decisions") 
 
 #import excel primary study reference sheet
-ps_allreferences <- read_excel(elig_path, sheet = "Reports") 
+ps_allreferences <- read_excel(elig_path, sheet = "reports") 
 
 #import excel citation matrix (with header to calculate # of included/eligible studies)
-ps_cm <- read_excel(elig_path, sheet = "Citation_Matrix")
+ps_cm <- read_excel(elig_path, sheet = "citation_matrix")
 
 #import excel citation matrix sheet (without header to transpose for lists of included/eligible reviews)
-citation_matrix <- read_excel(elig_path, sheet = "Citation_Matrix", col_names = FALSE)
+citation_matrix <- read_excel(elig_path, sheet = "citation_matrix", col_names = FALSE)
 ```
 
-Import reconciled, review-level data in `Depression_Overview_FileMaker_Data.xlsx`
-* Reference Level: One row per reference ID screened, abstract and eligibility decisions
-* Review Level: One row per full-text-eligible review ID, extracted data at the review level
+
+Import reconciled, review-level data in `Depression_Overview_Review_Data.xlsx`
+* `review_level`: One row per full-text-eligible review ID, extracted descriptive data at the review level
+* `review_amstar`: One row per full-text-eligible review ID, extracted quality study assessment (AMSTAR) data
+* `review_robis`: One row per full-text-eligible review ID, extracted risk of bias (ROBIS) data
 
 ```{r import-review}
-#set path to descriptive data
-fd_path <- here("data", "Depression_Overview_FileMaker_Data.xlsx")
+#set path to review-level data
+rd_path <- here("data", "Depression_Overview_Review_Data.xlsx")
 
-#import review level data files
-reference_level <- read_excel(fd_path, sheet = "reference_level",
-                                      guess_max = 123456) 
+#import review level descriptive data
+review_level <- read_excel(rd_path, sheet = "review_level")
 
-review_level <- read_excel(fd_path, sheet = "review_level")
+#import review level quality study assessment data
+review_amstar <- read_excel(rd_path, sheet = "amstar")
 
-review_amstar <- read_excel(fd_path, sheet = "amstar") #review level quality assessment
-
-review_robis <- read_excel(fd_path, sheet = "robis") #review level risk of bias
+#import review level risk of bias data
+review_robis <- read_excel(rd_path, sheet = "robis") 
 
 ```
 
-Import reconciled, primary study level data in `Depression_Overview_FileMaker_Data.xlsx`
-* Study Level: One row per study ID (eligible primary studies), extracted data at the primary study level
-* Group Level: One row per user-created group ID, extracted data at the group level
-* Outcome Level: One row per user-created outcome ID, extracted data at the outcome level
+Import reconciled, primary study level data in `Depression_Overview_Study_Data.xlsx`
+* `study_level`: One row per eligible primary study, extracted descriptive data for each included primary study
+* `study_irob`: One row per eligible primary study, extracted risk of bias data for individually-randomized studies
+* `study_crob`: One row per eligible primary study, extracted descriptive data for cluster-randomized studies
+* `study_robins`: One row per eligible primary study, extracted descriptive data for applicable non-randomized studies
+* `group_level`: One row per user-created group ID, extracted descriptive data for each trial group in primary studies
+* `outcome_level`: One row per user-created outcome ID, extracted descriptive for each outcome of interest in primary studies
 
 ```{r import-study}
-#import primary study level data files
-study_level <- read_excel(fd_path, sheet = "study_level")
+#set path to study-level data
+sd_path <- here("data", "Depression_Overview_Study_Data")
 
-study_irob <- read_excel(fd_path, sheet = "iROB") #study level risk of bias
+#import primary study level descriptive data
+study_level <- read_excel(sd_path, sheet = "study_level")
 
-study_crob <- read_excel(fd_path, sheet = "cROB") #study level risk of bias
+#import study level risk of bias data for individual RCTs
+study_irob <- read_excel(sd_path, sheet = "iROB") 
 
-study_robins <- read_excel(fd_path, sheet = "ROBINS-I") #study level risk of bias
+#import study level risk of bias data for cluster RCTs
+study_crob <- read_excel(sd_path, sheet = "cROB") 
 
-group_level <- read_excel(fd_path, sheet = "group_level")
+#import study level risk of bias data for non-randomized trials
+study_robins <- read_excel(sd_path, sheet = "ROBINS-I") 
 
-outcome_level <- read_excel(fd_path, sheet = "outcome_level") 
+#import group level descriptive data
+group_level <- read_excel(sd_path, sheet = "group_level")
+
+#import outcome level descriptive data
+outcome_level <- read_excel(sd_path, sheet = "outcome_level") 
 
 ```
 
 
-Import cleaned, meta-analysis data in `Depression_Overview_Meta_Analysis.xlsx`
-* Each outcome of interest is in a separate tab
-  * One row per group comparison and outcome combination (intervention + comparison + outcome), **effect size for meta-analyses**
+Import cleaned, meta-analysis data in `Depression_Overview_MetaAnalysis_Data.xlsx`
+* Effect size data for each included primary study
+* Each outcome of interest is in a separate tab (e.g., depression diagnosis)
+* One row per group comparison and outcome combination (intervention + comparison + outcome)
 
 ```{r import-ma}
-#set path to meta-analysis data
+#set path to effect size data for meta-analyses
 ma_path <- here("data", "Depression_Overview_Meta_Analysis.xlsx")
 
-#import meta-analysis data files
+#import effect size data for depression diagnosis
 depression_diagnosis <- read_excel(ma_path, sheet = "Depression Diagnosis")
 
+#import effect size data for depression symptoms
 depression_symptoms <- read_excel(ma_path, sheet = "Depression Symptoms")
 
+#import effect size data for anxiety
 anxiety_symptoms <- read_excel(ma_path, sheet = "Anxiety")
 ```
 
