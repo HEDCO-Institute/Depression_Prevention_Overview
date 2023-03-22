@@ -17,6 +17,9 @@ p_load_gh("thdiakon/ccaR", "mcguinlu/robvis") #from github
 
 ```
 
+## Overview
+
+
 
 ## Import
 
@@ -129,4 +132,1306 @@ anxiety_symptoms <- read_excel(ma_path, sheet = "Anxiety")
 ```
 
 ## Pre-processing
+
+Reference Level:
+* add leading numbers to all eligibility criteria reasons since some responses did not have them
+
+```{r tidy-reference}
+#add leading numbers to harmonize responses
+td_reference <- reference_level %>%
+  mutate(exclude_reason = case_when(exclude_reason == "Ineligible due to anxiety focus only" ~
+                                            "01. Ineligible due to anxiety focus only",
+                                          exclude_reason == "Ineligible population (not K-12 students)" ~
+                                            "02. Ineligible population (not K-12 students)",
+                                          exclude_reason == "Ineligible interventions (not universal or secondary prevention)" ~
+                                            "03. Ineligible interventions (not universal or secondary prevention)",
+                                          exclude_reason == "Ineligible comparator (no comparator)" ~
+                                            "04. Ineligible comparator (no comparator)",
+                                          exclude_reason == "Ineligible outcomes (no depression outcomes)" ~
+                                            "05. Ineligible outcomes (no depression outcomes)",
+                                          exclude_reason == "Ineligible setting (not in school settings)" ~
+                                            "07. Ineligible setting (not in school settings)",
+                                          exclude_reason == "Ineligible study design (not a systematic review)" ~
+                                            "08. Ineligible study design (not a systematic review)",
+                                          exclude_reason == "Ineligible study design (no meta-analysis)" ~
+                                            "09. Ineligible study design (no meta-analysis)",
+                                          exclude_reason == "Ineligible publication type (not a full report)" ~
+                                            "10. Ineligible publication type (not a full report)",
+                                          exclude_reason == "Other reason (please specify in notes)" ~
+                                            "11. Other reason (please specify in notes)",
+                                          TRUE ~ exclude_reason)) %>%
+  mutate_if(is.character, as.factor)
+
+```
+
+Review Level:
+* create a new variable to identify reviews (extract author's last name and paste it with the year of publication)
+* pull a list of the included reviews to use for filtering and merging
+* merge review names into all risk of bias data
+* *correct risk of bias data so each study has one corresponding risk of bias assessment*
+
+```{r tidy-review}
+#create variable for author/year
+td_review <- review_level %>% 
+  mutate(review_author_lastname = str_extract(review_author_name, '\\w+$'),
+         review_author_year = paste(review_author_lastname, review_year, sep = " ")) %>% 
+  mutate(review_author_year = case_when(review_author_year == "Seidler 2017" ~ "Werner-Seidler 2017",
+                                       review_author_year == "Seidler 2021" ~ "Werner-Seidler 2021",
+                                       review_author_year == "Zoonen 2014" ~ "van Zoonen 2014",
+                                       TRUE ~ review_author_year)) #correct parsing errors
+
+#pull list of review ids and review names (author/year)
+review_idbyname <- td_review %>% 
+  select(review_id, review_author_year)
+
+#merge review names into review_amstar data
+td_amstar <- review_amstar %>% 
+  left_join(review_idbyname) %>% 
+  select(review_author_year, everything()) %>% 
+  arrange(review_author_year) 
+
+#merge review names into review_robis data
+td_robis <- review_robis %>% 
+  left_join(review_idbyname) %>% 
+  select(review_author_year, everything()) %>% 
+  arrange(review_author_year) 
+
+#filter for studies with correct irob info
+irob_df <- study_irob %>% 
+  filter(primary_study_id != 1088) %>%  #remove study that should be cluster rob assessment
+  select(primary_study_id, ends_with("judgment"), iROB_overall_rating)
+
+#filter for studies with crob info
+crob_df <- study_crob %>% 
+  filter(primary_study_id != 1085) %>%  #remove study that should be robins-i assessment
+  select(primary_study_id, ends_with("judgment"), cROB_overall_rating)
+
+#select variables for robins-i info
+robins_df <- study_robins %>% 
+  select(primary_study_id, ends_with("judgment"), robins_overall_rating)
+
+```
+
+Primary Study Eligibility Level: 
+* *REMOVE LEADING NUMBERS?* - ps_elig_td <- ps_eligibility %>%
+* pull list of primary studies that are included in our meta-analyses (eligible studies)
+* factor and rename the study name variable in the `citation_matrix` to match all other files
+
+```{r tidy-pseligibility}
+#pull list of included studies
+inc_ps <- ps_elig_td %>% 
+  filter(decision == "Include") %>% 
+  pull(study) 
+
+#factor and rename study variable in citation matrix with header file
+td_cm <- ps_cm %>% 
+  mutate(study = factor(`Primary Study`)) %>% 
+  select(-`Primary Study`) %>% 
+  select(study, everything()) 
+
+```
+
+Primary Study Level:
+* specify numeric variable types for calculations
+* for numeric variables, specify that -999 is missing for calculations
+* extract a data frame of study ids and study names for merging
+
+```{r tidy-study}
+#clean study level data
+td_study <- study_level %>% 
+  arrange(str_to_lower(study_author_year)) %>% 
+  mutate(cluster_size = as.numeric(cluster_size)) %>% 
+  mutate_if(is.numeric, ~ if_else(. == -999, NA_real_, .))
+  
+#extract study id and study names
+study_idbyname <- td_study %>% 
+  select(primary_study_id, study_author_year)
+  
+```
+
+Group Level: 
+* correct `intervention_intensity` variable to be the average when a range was extracted
+* specify numeric variable types for calculations
+
+```{r tidy-group}
+#correct intervention intensity variable
+td_group <- group_level %>% 
+  mutate(intervention_intensity = case_when(intervention_intensity == "20 to 30" ~ "50",
+                                            intervention_intensity == "20 to 40" ~ "30",
+                                            intervention_intensity == "2040" ~ "30",
+                                            intervention_intensity == "2060" ~ "40",
+                                            intervention_intensity == "3060" ~ "45",
+                                            intervention_intensity == "3090" ~ "60",
+                                            intervention_intensity == "35 to 60" ~ "47.5",
+                                            intervention_intensity == "3540" ~ "37.5",
+                                            intervention_intensity == "40 to 60" ~ "50",
+                                            intervention_intensity == "4045" ~ "42.5",
+                                            intervention_intensity == "4050" ~ "45",
+                                            intervention_intensity == "45 to 50" ~ "47.5",
+                                            intervention_intensity == "4550" ~ "47.5",
+                                            intervention_intensity == "4560" ~ "52.5",
+                                            intervention_intensity == "4590" ~ "67.5",
+                                            intervention_intensity == "5060" ~ "55",
+                                            TRUE ~ intervention_intensity)) %>%  
+  mutate(intervention_intensity = as.numeric(intervention_intensity)) %>% 
+  mutate_if(is.numeric, ~ if_else(. == -999, NA_real_, .)) 
+
+```
+
+Outcome Level:
+* transform study ID variable to numeric
+
+```{r tidy-outcome}
+#make study ID numeric
+td_outcome <- outcome_level %>% 
+  mutate(primary_study_id = as.numeric(primary_study_id))
+
+```
+
+# Analysis Script for Results Section in Report
+
+The following sections are organized to match the order in which results were presented in the report. The code to run the results for the narrative sections are presented first. Followed by the code to produce results for the figures, tables, and appendices.
+
+## Narrative Results
+
+This section includes the code to reproduce results in the narrative results section of the report. Each section heading of this document corresponds exactly to those in the narrative. 
+
+### Eligibility Screening
+
+This section includes code to reproduce the abstract and full-text eligibility screening narrative results section.
+
+Number of records for abstract screening:
+
+```{r elig-imported-refs}
+#number of rows in imported references data
+nrow(td_reference)
+
+```
+
+Number and percent of retained citations:
+
+```{r elig-kept-citations}
+#retained citations
+sum(td_reference$screening_consensus == "1. Keep")
+
+#percent out of all citations
+sum(td_reference$screening_consensus == "1. Keep") / nrow(td_reference) * 100
+
+```
+
+Number of eligible reviews: 
+
+```{r elig-reviews}
+#create dataframe at the study level for reporting # of *reviews*
+td_screen_study <- td_reference %>% 
+  filter(!is.na(review_id)) %>% 
+  distinct(review_id, .keep_all = TRUE)
+
+#number of eligible *reviews*
+sum(td_screen_study$eligibility_consensus == "Eligible")
+
+```
+
+Percentage of eligible reviews out of all full-text reviews assessed for eligibility:
+
+```{r elig-review-percent}
+#percent of eligible reviews out of all full-texts assessed 
+sum(td_screen_study$eligibility_consensus == "Eligible") / sum(td_screen_study$screening_consensus == "1. Keep") * 100
+
+```
+
+Percentage of eligible reviews out of all citations identified: 
+
+```{r elig-review-percent2}
+#percent of eligible reviews out of all citations 
+sum(td_screen_study$eligibility_consensus == "Eligible") / nrow(td_reference) * 100
+
+```
+
+Number of primary studies included across all reviews: 
+
+```{r elig-study}
+#number of primary studies across reviews
+nrow(ps_elig_td)
+
+```
+
+Number and percentage of primary studies that met our eligibility criteria: 
+
+```{r elig-inc-stud}
+#number of included primary studies
+sum(ps_elig_td$decision == "Include")
+
+#percentage 
+sum(ps_elig_td$decision == "Include") / nrow(ps_elig_td) * 100
+
+```
+
+### Characteristics of Included Systematic Reviews 
+
+This section includes code to reproduce the characteristics of included systematic reviews narrative results section.
+
+Range and median of publication year across reviews:
+
+```{r review-char-year}
+#range and median for year published across reviews
+range(review_level$review_year)
+median(review_level$review_year)
+
+```
+
+Calculate most commonly searched databases
+
+```{r review-char-databases}
+#change string to lowercase and create flag if each database was searched
+rev_df <- review_level %>% 
+  mutate(databases_searched = str_to_lower(databases_searched),
+         pubmed = str_detect(databases_searched, "pubmed"),
+         psycinfo = str_detect(databases_searched, "psycinfo"),
+         medline = str_detect(databases_searched, "medline"),
+         eric = str_detect(databases_searched, "eric"),
+         eric2 = str_detect(databases_searched, "education resources information center"),
+         ebsco = str_detect(databases_searched, "ebsco"),
+         proquest_dt = str_detect(databases_searched, "dissertation and theses"),
+         psycarticles = str_detect(databases_searched, "psycarticles"),
+         psycextra = str_detect(databases_searched, "psycextra"),
+         cochrance_central = str_detect(databases_searched, "cochrane central"),
+         cochrane_library = str_detect(databases_searched, "cochrane library"),
+         wos = str_detect(databases_searched, "web of science"),
+         academic_ap = str_detect(databases_searched, "academic search premier"),
+         pbs_collection = str_detect(databases_searched, "psychology and behavioral sciences collection"),
+         cinahl = str_detect(databases_searched, "cinahl"),
+         embase = str_detect(databases_searched, "embase"),
+         science_cit_index = str_detect(databases_searched, "science citation index"),
+         sci_direct = str_detect(databases_searched, "science direct"),
+         scopus = str_detect(databases_searched, "scopus"),
+         gscholar = str_detect(databases_searched, "google scholar"),
+         british_ni = str_detect(databases_searched, "british nursing index"),
+         britich_ei = str_detect(databases_searched, "british education index"),
+         assia = str_detect(databases_searched, "assia"))
+
+#create long dataframe
+review_databases <- rev_df %>% 
+  select(review_id, pubmed:assia) %>% 
+  pivot_longer(cols = pubmed:assia) %>% 
+  left_join(review_idbyname) %>% 
+  mutate(value = as.character(value))
+
+#calculate most common databases searched and 
+#remove cases where reviews said both pubmed and medline but only searched one
+mode_databases <- review_databases %>% 
+  mutate(name = case_when(name == "eric2" ~ "eric",
+                          TRUE ~ name),
+         value = case_when(review_author_year == "Bastounis 2016" & name == "medline" ~ "FALSE",
+                           review_author_year == "Davaasambuu 2020" & name == "medline" ~ "FALSE",
+                           TRUE ~ value)) %>% 
+  group_by(name) %>% 
+  summarize(num_db = sum(value == "TRUE"),
+            percent = sum(value == "TRUE") / nrow(review_level) * 100) %>% 
+  arrange(desc(num_db))
+
+```
+
+Range and median of year of last database search: 
+
+```{r review-char-databaseyear}
+#extract year from search data
+review_level <- review_level %>% 
+  mutate(db_search_year = as.numeric(str_extract(search_date, "[0-9]{4}")))
+
+#calculate range and median
+range(review_level$db_search_year, na.rm = TRUE)
+median(review_level$db_search_year, na.rm = TRUE)
+
+```
+
+Number and percentage of reviews with PRISMA flow diagrams: 
+
+```{r review-char-prisma}
+#number and percent with flow diagrams
+sum(review_level$prisma_flow_diagram == "Yes", na.rm = TRUE) 
+sum(review_level$prisma_flow_diagram == "Yes", na.rm = TRUE) / nrow(review_level) * 100
+
+```
+
+Number and percentage of reviews that reported a registration number:
+
+```{r review-char-registration}
+#number and % with registration number
+sum(review_level$review_registration != "-999") 
+sum(review_level$review_registration != "-999") / nrow(review_level) * 100 
+
+```
+
+Number and percentage of reviews that had a data availability statement: 
+
+```{r review-char-availability}
+#number and % with availability statements
+sum(review_level$review_availability_statement != "-999")
+sum(review_level$review_availability_statement != "-999") / nrow(review_level) * 100 
+
+```
+
+#### Overlap of Primary Studies Across Systematic Reviews
+
+Range and median of number of primary studies included in each review (using citation matrix data):
+
+```{r numperreview}
+#using citation matrix without headers, transpose data 
+cmt <- as.data.frame(t(citation_matrix))
+
+#remove first row of citation matrix that contains column names
+df_overlap <- cmt %>% 
+  slice(-1) 
+
+#create new variable to calculate number of studies in each review
+df_overlap <- df_overlap %>% 
+  mutate(num_stud = rowSums(!is.na(df_overlap)) - 1) #rowsum minus ID column
+
+#range and median of number of studies in each review
+range(df_overlap$num_stud) 
+median(df_overlap$num_stud) 
+
+```
+
+Number and percentage of primary studies included in more than one review:
+
+```{r morethanonereview}
+#create flag for if study is in more than one review
+cm_overlap <- td_cm %>% 
+  mutate(morethanone = ifelse(rowSums(!is.na(td_cm)) >2, "yes", "no"))
+
+#number and % included in more than one review
+sum(cm_overlap$morethanone == "yes")
+sum(cm_overlap$morethanone == "yes") / nrow(cm_overlap) * 100
+
+```
+
+Number and percentage of eligible primary studies included in more than one review:
+
+```{r elig-morethanone}
+#filter for eligible primary studies
+elig_cm <- td_cm %>% 
+  filter(study %in% inc_ps) 
+
+#create flag if eligible study is included in more than one review
+elig_overlap <- elig_cm %>% 
+  mutate(morethanone = ifelse(rowSums(!is.na(elig_cm)) >2, "yes", "no"))
+
+#number and % of eligible studies included in more than one review
+sum(elig_overlap$morethanone == "yes") #47
+sum(elig_overlap$morethanone == "yes") / nrow(elig_overlap) * 100 #70.149%
+
+```
+
+Overall CCA percentage for all primary studies included across reviews:
+
+```{r ccaR-overlap}
+#create dataframe for ccaR input (1 = included; 0 = excluded)
+ccar_input <- td_cm %>% 
+  mutate_if(is.character, ~ifelse(. == "x", 1, .)) %>% 
+  mutate_if(is.numeric, funs(replace(., is.na(.), 0))) 
+
+#calculate overall CCA
+cca(ccar_input) 
+
+```
+
+Overall CCA percentage for primary studies meeting our eligibility criteria:
+
+```{r ccaR-elig}
+#filter for only eligible studies
+ccar_input_elig <- ccar_input %>% 
+  filter(study %in% inc_ps)
+
+#calculate overall CCA
+cca(ccar_input_elig) 
+
+```
+
+#### Methodological Quality of Included Systematic Reviews (AMSTAR-2)
+
+Number and percentage of reviews that had high confidence ratings: 
+
+```{r amstar-high}
+#number/% of high confidence
+sum(td_amstar$amstar_confidence_rating == "1. High") 
+sum(td_amstar$amstar_confidence_rating == "1. High")  / nrow(td_amstar) * 100 
+
+```
+
+Number and percentage of reviews that had moderate confidence ratings: 
+
+```{r amstar-mod}
+#number/% of moderate confidence
+sum(td_amstar$amstar_confidence_rating == "2. Moderate")
+sum(td_amstar$amstar_confidence_rating == "2. Moderate")  / nrow(td_amstar) * 100 
+
+```
+
+Number and percentage of reviews that had low confidence ratings: 
+
+```{r amstar-low}
+#number/% of low confidence
+sum(td_amstar$amstar_confidence_rating == "3. Low")
+sum(td_amstar$amstar_confidence_rating == "3. Low")  / nrow(td_amstar) * 100 
+
+```
+
+Number and percentage of reviews that had critically low confidence ratings: 
+
+```{r amstar-critical-low}
+#number/% of critically low confidence
+sum(td_amstar$amstar_confidence_rating == "4. Critically Low")
+sum(td_amstar$amstar_confidence_rating == "4. Critically Low")  / nrow(td_amstar) * 100 
+
+```
+
+Calculate most common critical weaknesses in AMSTAR ratings among reviews: 
+
+```{r amstar-critical-domains}
+#select AMSTAR ratings
+amstar_ratings <- td_amstar %>% 
+  select(review_author_year, ends_with("rating"))
+
+#change column names to match domain number
+names(amstar_ratings) <- c("review_author_year", "1", "2", "3", "4", "5", "6", "7",
+                          "8", "9", "10", "11", "12", "13", "14", "15", "16", "amstar_confidence_rating")
+
+#filter for critical domains
+amstar_crit <- amstar_ratings %>% 
+  select(review_author_year, `2`, `4`, `7`, `9`, `11`, `13`, `15`) %>% 
+  pivot_longer(cols = c("2", "4", "7", "9", "11", "13", "15"))
+
+#calculate frequency for "No"s per critical domains
+amstar_crit_mode <- amstar_crit %>% 
+  group_by(name) %>% 
+  summarize(n = sum(value == "No"),
+            percent = sum(value == "No") / nrow(amstar_ratings) * 100) %>% 
+  arrange(desc(n))
+amstar_crit_mode
+
+```
+
+Calculate most common non-critical weaknesses in AMSTAR ratings among reviews: 
+
+```{r amstar-non-crit}
+#filter for non-critical domains
+amstar_noncrit <- amstar_ratings %>% 
+  select(review_author_year, `1`, `3`, `5`, `6`, `8`, `10`, `12`, `14`, `16`) %>% 
+  pivot_longer(cols = c("1", "3", "5", "6", "8", "10", "12", "14", "16"))
+
+#calculate frequency for "No"s per non-critical domains
+amstar_noncrit_mode <- amstar_noncrit %>% 
+  group_by(name) %>% 
+  summarize(n = sum(value == "No"),
+            percent = sum(value == "No") / nrow(amstar_ratings) * 100) %>% 
+  arrange(desc(n))
+amstar_noncrit_mode
+
+```
+
+#### Risk of Bias in Included Systematic Reviews (ROBIS) 
+
+Number and percentage of reviews with low risk of bias:
+
+```{r robis-low}
+#number/% of low risk
+sum(td_robis$robis_overall_rating == "2. Low")
+sum(td_robis$robis_overall_rating == "2. Low")  / nrow(td_robis) * 100 
+
+```
+
+Number and percentage of reviews with unclear risk of bias:
+
+```{r robis-unclear}
+#number/% of unclear risk
+sum(td_robis$robis_overall_rating == "3. Unclear") 
+sum(td_robis$robis_overall_rating == "3. Unclear")  / nrow(td_robis) * 100 
+
+```
+
+Number and percentage of reviews with high risk of bias:
+
+```{r robis-high}
+#number/% of high risk
+sum(td_robis$robis_overall_rating == "1. High") #12
+sum(td_robis$robis_overall_rating == "1. High")  / nrow(td_robis) * 100 #50%
+
+```
+
+Calculate the most common concerns about risk of bias among reviews:
+
+```{r robis-common-concerns}
+#select ratings, transform to long format, calculate percent with high risk
+robis_concerns <- td_robis %>% 
+  select(review_author_year, ends_with("decision"), robis_overall_a, 
+         robis_overall_b, robis_overall_c, robis_overall_rating) %>% 
+  pivot_longer(cols = 2:9) %>% 
+  group_by(name) %>% 
+  summarize(n_decision = sum(value == "1. High"),
+            per_decision = sum(value == "1. High") / nrow(td_robis) * 100,
+            n_overall = sum(value == "4. No"),
+            per_overall = sum(value == "4. No") / nrow(td_robis) * 100) %>% 
+  arrange(desc(n_decision))
+robis_concerns
+
+```
+
+### Characteristics of Included Primary Studies 
+
+This section includes code to reproduce the characteristics of included primary studies narrative results section.
+
+Range and median for year of publication of primary studies: 
+
+```{r ps-char-year}
+#range and median for publication year
+range(td_study$study_publication_year)
+median(td_study$study_publication_year)
+
+```
+
+Range and median for primary study start and end dates: 
+
+```{r ps-char-startyear}
+#extract year from date variables
+study_dates <- td_study %>% 
+  mutate(start_year = as.numeric(str_extract(study_start_date, "[0-9]{4}")),
+         end_year = as.numeric(str_extract(study_end_date, "[0-9]{4}")))
+
+#range/median of start years
+range(study_dates$start_year, na.rm = TRUE)
+median(study_dates$start_year, na.rm = TRUE)
+```
+
+```{r ps-char-endyear}
+#range and median of end years
+range(study_dates$end_year, na.rm = TRUE)
+median(study_dates$end_year, na.rm = TRUE)
+
+```
+
+#### Study design
+
+Number and percentage of intervention and comparison groups per study:
+
+```{r ps-design-groups}
+#count number of groups within studies
+count_num_groups <- td_study %>% 
+  group_by(study_groups) %>% 
+  summarize(n = n(),
+            percent = n/nrow(td_study)*100)
+count_num_groups
+
+```
+
+Number and percentage of studies with individual randomized trials:
+
+```{r design-iRCT}
+#number/% of individual randomized trials 
+sum(td_study$research_design == "1. Randomized trial" & td_study$assignment_level == "1. Individual")
+sum(td_study$research_design == "1. Randomized trial" & td_study$assignment_level == "1. Individual") / nrow(td_study) * 100 
+
+```
+
+Number and percent of studies with cluster randomized trials:
+
+```{r design-cRCT}
+#number/% of cluster randomized trials
+sum(td_study$research_design == "1. Randomized trial" & td_study$assignment_level == "2. Cluster") 
+sum(td_study$research_design == "1. Randomized trial" & td_study$assignment_level == "2. Cluster") / nrow(td_study) * 100 
+
+```
+
+Number and percentage of studies with quasi-experimental design:
+
+```{r design-nonRCT}
+#number/% of QEDs
+sum(td_study$research_design == "4. QED - Regression adjustment")
+sum(td_study$research_design == "4. QED - Regression adjustment") / nrow(td_study) * 100 
+
+```
+
+Within cluster RCTs, number and percentage of studies that clustered by classrooms: 
+
+```{r design-cluster-classroom}
+#filter for cluster randomized trials
+cluster_df <- td_study %>% 
+  filter(research_design == "1. Randomized trial" & assignment_level == "2. Cluster")
+
+#of cluster trials, number/% of classroom cluster type
+sum(cluster_df$cluster_type == "1. Classroom") 
+sum(cluster_df$cluster_type == "1. Classroom") / nrow(cluster_df) * 100 
+
+```
+
+Within cluster RCTs, number and percentage of studies that clustered by schools
+
+```{r design-cluster-school}
+#of cluster trials, number/% of school cluster type
+sum(cluster_df$cluster_type == "2. School") 
+sum(cluster_df$cluster_type == "2. School") / nrow(cluster_df) * 100 
+
+```
+
+Within cluster RCTs, number and percentage of studies that clustered by districts:
+
+```{r design-cluster-district}
+#No districts in data
+summary(as.factor(cluster_df$cluster_type))
+
+```
+
+Within cluster RCTs, range and median of cluster size: 
+
+```{r design-cluster-size}
+#range/median of cluster size
+range(cluster_df$cluster_size, na.rm = TRUE) 
+median(cluster_df$cluster_size, na.rm = TRUE)
+
+```
+
+Number and percentage of studies that reported a PRISMA flow diagram: 
+
+```{r design-prisma}
+#of all studies, number/% with flow diagram
+sum(td_study$consort_flow_diagram == "Yes")
+sum(td_study$consort_flow_diagram == "Yes") / nrow(td_study) * 100 
+
+```
+
+Number and percentage of studies that reported a registration number: 
+
+```{r design-registration}
+#of all studies, number/% with registration number
+sum(td_study$study_registration != "-999") 
+sum(td_study$study_registration != "-999") / nrow(td_study) * 100 
+
+```
+
+Number and percentage of studies that reported a data availability statement: 
+
+```{r design-availability}
+#of all studies, number/% with availability statement
+sum(td_study$availability_statement != "-999") 
+sum(td_study$availability_statement != "-999") / nrow(td_study) * 100 
+
+```
+
+#### Participant characteristics
+
+Number students across all primary studies:
+
+```{r participants-n}
+#number of students
+sum(td_study$number_participants) 
+
+```
+
+Range and median of number of students across all primary studies:
+
+```{r participants-n2}
+#median and range of students
+range(td_study$number_participants) 
+median(td_study$number_participants) 
+
+```
+
+Number of classrooms included across primary studies: 
+
+```{r participants-classrooms}
+#number of classrooms
+sum(td_study$number_classrooms, na.rm = TRUE) 
+
+```
+
+Range and median of number of classrooms included in primary studies: 
+
+```{r participants-classrooms2}
+#median and range of classrooms
+range(td_study$number_classrooms, na.rm = TRUE) 
+median(td_study$number_classrooms, na.rm = TRUE)
+
+```
+
+Number of schools included across primary studies: 
+
+```{r participants-schools}
+#number of schools
+sum(td_study$number_schools, na.rm = TRUE) 
+
+```
+
+Range and median of number of schools included in primary studies: 
+
+```{r participants-schools2}
+#median and range of schools
+range(td_study$number_schools, na.rm = TRUE) 
+median(td_study$number_schools, na.rm = TRUE)
+
+```
+
+Range and median of average student age
+
+```{r participants-age}
+#range and median of mean student age
+range(td_study$average_age, na.rm = TRUE) 
+median(td_study$average_age, na.rm = TRUE)
+
+```
+
+Number and percent of studies that took place in elementary or primary schools:
+
+```{r participants-elem-schl}
+#create count variables per school level since some responses contain more than one school type
+count_school_level <- td_study %>% 
+  mutate(elem_count = str_count(school_level, "Elementary") + str_count(school_level, "Primary"),
+         mid_count = str_count(school_level, "Middle"),
+         high_count = str_count(school_level, "High") + str_count(school_level, "Secondary")) 
+
+#number/% studies in elementary or primary school
+sum(count_school_level$elem_count) 
+sum(count_school_level$elem_count) / nrow(td_study) * 100 
+
+```
+
+Number and percent of studies that took place in middle schools:
+
+```{r participants-mid-schl}
+#number/% studies in middle school
+sum(count_school_level$mid_count) 
+sum(count_school_level$mid_count) / nrow(td_study) * 100 
+
+```
+
+Number and percent of studies that took place in high or secondary schools:
+
+```{r participants-high-schl}
+#number/% studies in high or secondary school
+sum(count_school_level$high_count) 
+sum(count_school_level$high_count) / nrow(td_study) * 100 
+
+```
+
+Calculate most common grade levels among studies:
+
+```{r participants-grd-level}
+#create flag variables per grade level since some responses contain more than one school type
+count_grade_level <- td_study %>% 
+  mutate(first_flag = str_count(grade_level, "1"), 
+         second_flag = str_count(grade_level, "2"), 
+         third_flag = str_count(grade_level, "3"), 
+         fourth_flag = str_count(grade_level, "4"), 
+         fifth_flag = str_count(grade_level, "5"), 
+         sixth_flag = str_count(grade_level, "6"), 
+         seventh_flag = str_count(grade_level, "7"), 
+         eighth_flag = str_count(grade_level, "8"), 
+         ninth_flag = str_count(grade_level, "9"), 
+         tenth_flag = str_count(grade_level, "10"),
+         eleventh_flag = str_count(grade_level, "11"),
+         twelveth_flag = str_count(grade_level, "12")) %>% 
+  select(primary_study_id, grade_level, ends_with("flag")) %>% 
+  pivot_longer(cols = first_flag:twelveth_flag,
+               names_to = "grade") %>% 
+  group_by(grade) %>% 
+  summarize(n = sum(value),
+            percent = n/nrow(td_study)*100) %>% 
+  arrange(desc(n))
+head(count_grade_level)
+
+```
+
+Range and median of percentage of female students among primary studies: 
+
+```{r participants-female}
+#range and median of % female
+range(td_study$percent_female, na.rm = TRUE) 
+median(td_study$percent_female, na.rm = TRUE) * 100
+
+```
+
+Number of studies conducted in the United States
+
+```{r participants-USA}
+#number of studies in U.S.
+sum(td_study$country == "United States") 
+
+```
+
+Of studies conducted in the U.S., range and median of percentage of white students:
+
+```{r participants-US-white}
+#create subset with only studies conduted in U.S.
+US_study <- td_study %>% 
+  filter(country == "United States")
+
+#of US studies, range and median of % white
+range(US_study$percent_white, na.rm = TRUE) 
+median(US_study$percent_white, na.rm = TRUE) * 100 
+
+```
+
+Of studies conducted in the U.S., range and median of percentage of ELL students:
+
+```{r participants-US-ELL}
+#of US studies, range and median of % ELL
+range(US_study$percent_ELL, na.rm = TRUE) 
+
+```
+
+Of studies conducted in the U.S., range and median of percentage of students receiving free or reduced price lunch:
+
+```{r participants-US-FRPL}
+#of US studies, range and median of % FRPL
+range(US_study$percent_FRPL, na.rm = TRUE) #only 2 values = 29% - 46%
+median(US_study$percent_FRPL, na.rm = TRUE)
+
+```
+
+#### Setting characteristics
+
+Most common countries where primary studies took place: 
+
+```{r setting-countries}
+#count most common countries
+count_country <- td_study %>% 
+  group_by(country) %>% 
+  summarize(n = n(),
+            percent = n/nrow(td_study)*100) %>% 
+  arrange(desc(n))
+head(count_country)
+
+```
+
+Most common states where primary studies conducted in the U.S. took place: 
+
+```{r setting-states}
+#of US countries, count most common states
+count_states <- US_study %>% 
+  group_by(state) %>% 
+  summarize(n = n(),
+            percent = n/nrow(US_study)*100) %>% 
+  arrange(desc(n))
+head(count_states)
+
+```
+
+Number and percentage of studies that provided information about area type: 
+
+```{r setting-location-type}
+#number of studies providing location type (urbanicity)
+sum(td_study$urbanicity != "4. Cannot tell")
+sum(td_study$urbanicity != "4. Cannot tell") / nrow(td_study) * 100 
+
+```
+
+Of studies reporting area type, number and percentage of studies that took place in each area type: 
+
+```{r setting-location}
+#count location type by creating new count variable since more than one are listed per cell
+count_urbanicity <- td_study %>% 
+  filter(urbanicity != "4. Cannot tell") %>% 
+  mutate(rural_count = str_count(urbanicity, "Rural"),
+         suburban_count = str_count(urbanicity, "Suburban"), 
+         urban_count = str_count(urbanicity, "Urban")) %>% 
+  select(primary_study_id, urbanicity, ends_with("count")) %>% 
+  pivot_longer(cols = rural_count:urban_count,
+               names_to = "area_type") %>% 
+  group_by(area_type) %>% 
+  summarize(n = sum(value),
+            percent = sum(value)/sum(td_study$urbanicity != "4. Cannot tell")*100) %>% 
+  arrange(desc(n))
+count_urbanicity
+
+```
+
+Number and percentage of primary studies that reported type of school: 
+
+```{r setting-schl-type}
+#number of studies reporting school type
+sum(td_study$school_type != "Cannot Tell")
+sum(td_study$school_type != "Cannot Tell") / nrow(td_study) * 100 
+
+```
+
+Of studies reporting school type, number and percentage of studies with each school type: 
+
+```{r setting-counrties}
+#count school type by creating new variables since more than one per cell
+count_schooltype <- td_study %>% 
+  filter(school_type != "Cannot Tell") %>% 
+  mutate(public_count  = str_count(school_type, "Public"),
+         private_count = str_count(school_type, "Private"), 
+         charter_count = str_count(school_type, "Charter"),
+         parochial_count = str_count(school_type, "Parochial")) %>% 
+  select(primary_study_id, school_type, ends_with("count")) %>% 
+  pivot_longer(cols = public_count:parochial_count,
+               names_to = "schooltype") %>% 
+  group_by(schooltype) %>% 
+  summarize(n = sum(value),
+            percent = sum(value)/sum(td_study$school_type != "Cannot Tell")*100) %>% 
+  arrange(desc(n))
+count_schooltype
+  
+```
+
+#### Experimental Interventions
+
+Number of experimental interventions among primary studies: 
+
+```{r intervention-n}
+#filter for experimental interventions 
+grp_int <- td_group %>% 
+  filter(group_type == "1. Intervention")
+
+#number of experimental interventions (group type)
+nrow(grp_int)
+
+```
+
+Number and percentage of each intervention format: 
+
+```{r intervention-format}
+#number/% of format (intervention_format)
+count_format <- grp_int %>% 
+  group_by(intervention_format) %>% 
+  summarize(n = n(),
+            percent = n/nrow(grp_int)*100)
+count_format
+
+```
+
+Range and median of intervention duration (in weeks): 
+
+```{r intervention-duration}
+#range/median of duration (intervention_weeks)
+range(grp_int$intervention_weeks, na.rm = TRUE) 
+median(grp_int$intervention_weeks, na.rm = TRUE) 
+
+```
+
+Range and median of number of intervention sessions delivered: 
+
+```{r intervention-session}
+#range/median of # of sessions (intervention_sessions)
+range(grp_int$intervention_sessions, na.rm = TRUE) 
+median(grp_int$intervention_sessions, na.rm = TRUE)
+
+```
+
+Range and median of intervention session length (in minutes): 
+
+```{r intervention-intensity}
+#range/median of session length (intervention_intensity)
+range(grp_int$intervention_intensity, na.rm = TRUE)
+median(grp_int$intervention_intensity, na.rm = TRUE)
+
+```
+
+Number of interventions with reported information on frequency of intervention delivery: 
+
+```{r intervention-frequency}
+#number of interventions with frequency info (intervention_frequency)
+sum(grp_int$intervention_frequency != "-999") 
+
+```
+
+Of interventions reporting frequency of delivery, number and percentage of interventions with each frequency: 
+
+```{r intervention-freq-count}
+#Of those reporting frequency, number/% of frequency
+grp_int %>% 
+  filter(intervention_frequency != "-999") %>% 
+  group_by(intervention_frequency) %>% 
+  summarize(n = n(),
+            percent = n/sum(grp_int$intervention_frequency != "-999")*100)
+
+```
+
+Number of interventions with reported information about intervention provider: 
+
+```{r intervention-provider}
+#number of interventions with provider info (intervention_provider)
+sum(grp_int$intervention_provider != "8. Cannot Tell")
+
+```
+
+Of interventions reporting provider, number and percentage of interventions with each provider type: 
+
+```{r intervention-provider-count}
+#Of those reporting provider, number/% by provider, create count variable since more than one response per cell
+count_intprovider <- grp_int %>% 
+  filter(intervention_provider != "8. Cannot Tell") %>% 
+  mutate(teacher_count  = str_count(intervention_provider, "Teacher"),
+         counselor_count = str_count(intervention_provider, "Guidance Counselor"), 
+         bhpersonnel_count = str_count(intervention_provider, "Behavioral Health Personnel"),
+         researcher_count = str_count(intervention_provider, "Researcher"),
+         schlpersonnel_count = str_count(intervention_provider, "Other School Personnel"),
+         self_count = str_count(intervention_provider, "Self-Administered"),
+         other_count = str_count(intervention_provider, "7. Other")) %>% 
+  select(primary_study_id, intervention_provider, ends_with("count")) %>% 
+  pivot_longer(cols = teacher_count:other_count,
+               names_to = "provider") %>% 
+  group_by(provider) %>% 
+  summarize(n = sum(value),
+            percent = sum(value)/sum(grp_int$intervention_provider != "8. Cannot Tell") *100) %>% 
+  arrange(desc(n))
+count_intprovider
+
+```
+
+Number of interventions with reported information on recipient type: 
+
+```{r intervention-recipients}
+#number of interventions with recipient info (intervention_recipients)
+sum(grp_int$intervention_recipients != "7. Cannot Tell") 
+
+```
+
+Of interventions reporting recipient type, number and percentage of interventions with each recipient type: 
+
+```{r intervention-recipients-count}
+#Of those reporting recipient, number/% by recipient type, create count variable since more than one response per cell
+count_intrecip <- grp_int %>% 
+  filter(intervention_provider != "7. Cannot Tell") %>% 
+  mutate(student_count  = str_count(intervention_recipients, "Student"),
+         peers_count = str_count(intervention_recipients, "Peers"), 
+         teacher_count = str_count(intervention_recipients, "Teacher"),
+         staff_count = str_count(intervention_recipients, "Staff"),
+         family_count = str_count(intervention_recipients, "Family"),
+         community_count = str_count(intervention_recipients, "Community")) %>% 
+  select(primary_study_id, intervention_recipients, ends_with("count")) %>% 
+  pivot_longer(cols = student_count:community_count,
+               names_to = "recipients") %>% 
+  group_by(recipients) %>% 
+  summarize(n = sum(value),
+            percent = sum(value)/sum(grp_int$intervention_recipients != "7. Cannot Tell") *100) %>% 
+  arrange(desc(n))
+count_intrecip
+
+```
+
+Number of interventions with reported information on where the intervention was delivered: 
+
+```{r intervention-location}
+#number of interventions with location info (intervention_location)
+sum(grp_int$intervention_location != "7. Cannot tell")
+
+```
+
+Of interventions reporting location, number and percentage of interventions with each location type: 
+
+```{r intervention-location-count}
+#Of those reporting location, number/% by location type, create count variable since more than one response per cell
+count_intloc <- grp_int %>% 
+  filter(intervention_location != "7. Cannot tell") %>% 
+  mutate(inschl_count  = str_count(intervention_location, "During School Time"),
+         outschl_count = str_count(intervention_location, "Out-of-School Time"), 
+         home_count = str_count(intervention_location, "Home"),
+         community_count = str_count(intervention_location, "Community"),
+         residential_count = str_count(intervention_location, "Residential"),
+         other_count = str_count(intervention_location, "Other")) %>% 
+  select(primary_study_id, intervention_location, ends_with("count")) %>% 
+  pivot_longer(cols = inschl_count:other_count,
+               names_to = "location") %>% 
+  group_by(location) %>% 
+  summarize(n = sum(value),
+            percent = sum(value)/sum(grp_int$intervention_location != "7. Cannot tell") *100) %>% 
+  arrange(desc(n))
+count_intloc
+
+```
+
+Number of interventions with reported information on mode of delivery: 
+
+```{r intervention-delivery}
+#number of interventions with delivery mode (intervention_mode)
+sum(grp_int$intervention_mode != "-999") 
+
+```
+
+Of interventions reporting delivery, number and percentage of interventions with each delivery mode type: 
+
+```{r intervention-delivery-count}
+#Of those reporting delivery mode, number/% by delivery mode, create count variable since more than one response per cell
+count_intmode <- grp_int %>% 
+  filter(intervention_mode != "-999") %>% 
+  mutate(inperson_count  = str_count(intervention_mode, "In-Person"),
+         internet_count = str_count(intervention_mode, "Internet"), 
+         phone_count = str_count(intervention_mode, "Phone")) %>% 
+  select(primary_study_id, intervention_mode, ends_with("count")) %>% 
+  pivot_longer(cols = inperson_count:phone_count,
+               names_to = "mode") %>% 
+  group_by(mode) %>% 
+  summarize(n = sum(value),
+            percent = sum(value)/sum(grp_int$intervention_mode != "-999") *100) %>% 
+  arrange(desc(n))
+count_intmode
+
+```
+
+Number and percentage of studies with reported information on implementation monitoring: 
+
+```{r intervention-implementation}
+#create new variable that will flag if a study had any group that reported any implementation info 
+group_study_flag <- grp_int %>% 
+  group_by(primary_study_id) %>% 
+  mutate(monitor_flag = case_when(any(intervention_monitoring == "Yes") ~ "Yes",
+                                  TRUE ~ intervention_monitoring),
+         problem_flag = case_when(any(intervention_problems == "Yes") ~ "Yes",
+                                  TRUE ~ intervention_problems)) %>% 
+  ungroup() %>% 
+  select(primary_study_id, ends_with("flag")) %>% 
+  distinct(primary_study_id, .keep_all = TRUE)
+
+#number/% reporting implementation monitoring 
+sum(group_study_flag$monitor_flag == "Yes") 
+sum(group_study_flag$monitor_flag == "Yes") / nrow(group_study_flag) * 100 
+
+```
+
+Number and percentage of studies that reported any implementation problems:
+
+```{r intervention-session}
+#number/% reporting implementation problems
+sum(group_study_flag$problem_flag == "Yes") 
+sum(group_study_flag$problem_flag == "Yes") / nrow(group_study_flag) * 100 
+
+```
+
+#### Comparison Interventions
+
+Number of comparison interventions among primary studies: 
+
+```{r comparison-n}
+#filter for comparison interventions 
+grp_comp <- td_group %>% 
+  filter(group_type == "2. Comparison")
+
+#number of comparison interventions 
+nrow(grp_comp)
+
+```
+
+Number and percentage of each type of comparison group type: 
+
+```{r comparison-type}
+#number/% of comparison group type (comparison_type)
+count_comptype <- grp_comp %>% 
+  group_by(comparison_type) %>% 
+  summarize(n = n(),
+            percent = n/nrow(grp_comp)*100)
+count_comptype
+
+```
+
+#### Risk of bias
+
+**Individually-Randomized Trials (iROB 2)** 
+
+Number of individually-randomized trials:
+
+```{r irob-n}
+#number of iRCT studies
+nrow(irob_df) 
+
+```
+
+Among individual RCTs, number and percentage of each overall risk of bias rating:
+
+```{r irob-ratings}
+#number/% for overall rating
+count_irobtot <- irob_df %>% 
+  group_by(iROB_overall_rating) %>% 
+  summarize(n = n(), 
+            percent = n/nrow(irob_df)*100)
+count_irobtot
+
+```
+
+Among individual RCTs, most common concerns regarding risk of bias ratings (number and percentage of high ratings):
+
+```{r irob-concerns}
+#calculate most common domains with High ratings
+count_irobratings <- irob_df %>% 
+  pivot_longer(cols = iROB_domain1_judgment:iROB_domain5_judgment) %>% 
+  group_by(name) %>% 
+  summarize(n = sum(value == "1. High"),
+            percent = sum(value == "1. High") / nrow(irob_df) * 100) %>% 
+  arrange(desc(n))
+count_irobratings
+
+```
+
+**Cluster-Randomized Trials (cROB 2)**
+
+Number of cluster-randomized trials:
+
+```{r crob-n}
+#number of cRCT studies
+nrow(crob_df)
+
+```
+
+Among cluster RCTs, number and percentage of each overall risk of bias rating:
+
+```{r crob-ratings}
+#number/% for overall rating
+count_crobtot <- crob_df %>% 
+  group_by(cROB_overall_rating) %>% 
+  summarize(n = n(), 
+            percent = n/nrow(crob_df)*100)
+count_crobtot
+
+```
+
+Among cluster RCTs, most common concerns regarding risk of bias ratings (number and percentage of high ratings):
+
+```{r crob-concerns}
+#calculate most common domains with High ratings
+count_crobratings <- crob_df %>% 
+  pivot_longer(cols = cROB_domain1a_judgment:cROB_domain5_judgment) %>% 
+  group_by(name) %>% 
+  summarize(n = sum(value == "1. High"),
+            percent = sum(value == "1. High") / nrow(crob_df) * 100) %>% 
+  arrange(desc(n))
+count_crobratings
+
+```
+
+**Non-Randomized Trials (ROBINS-I)**
+
+Number of non-randomized trials:
+
+```{r robinsi-n}
+#number of QED studies
+nrow(robins_df)
+
+```
+
+Among QEDs, number and percentage of each overall risk of bias rating:
+
+```{r robinsi-ratings}
+#number/% for overall rating
+count_robinstot <- robins_df %>% 
+  group_by(robins_overall_rating) %>% 
+  summarize(n = n(), 
+            percent = n/nrow(robins_df)*100)
+count_robinstot
+
+```
+
+Among QEDs, most common concerns regarding risk of bias ratings (number and percentage of serious or critical ratings):
+
+```{r robinsi-concerns}
+#calculate most common domains with Serious or Critical ratings
+count_robinsratings <- robins_df %>% 
+  pivot_longer(cols = robins_domain1_judgment:robins_domain7_judgment) %>% 
+  group_by(name) %>% 
+  summarize(n = sum(value == "3. Serious") + sum(value == "4. Critical"),
+            percent = (sum(value == "3. Serious") + sum(value == "4. Critical")) / nrow(robins_df) * 100) %>% 
+  arrange(desc(n))
+count_robinsratings
+
+```
 
