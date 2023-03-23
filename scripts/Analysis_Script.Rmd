@@ -12,14 +12,14 @@ knitr::opts_chunk$set(echo = TRUE)
 library(pacman)
 
 #install and load required packages
-p_load(devtools, here, readxl, janitor, tidyverse, openxlsx, robumeta, metafor) 
+p_load(devtools, here, readxl, janitor, tidyverse, openxlsx, robumeta, metafor, lubridate, gt, webshot2, prismadiagramR) 
 p_load_gh("thdiakon/ccaR", "mcguinlu/robvis") #from github
 
 ```
 
 ## Overview
 
-
+**ADD OVERVIEW OF DOCUMENT - E.G., SECTIONS, REPRODUCE DATA REPORTED IN OUR REPORT WITH ANNOTATIONS, SEPARATE FILE TO REPRODUCE EXACT DOCUMENT (papaja)**
 
 ## Import
 
@@ -167,8 +167,7 @@ td_reference <- reference_level %>%
 Review Level:
 * create a new variable to identify reviews (extract author's last name and paste it with the year of publication)
 * pull a list of the included reviews to use for filtering and merging
-* merge review names into all risk of bias data
-* *correct risk of bias data so each study has one corresponding risk of bias assessment*
+* merge review names into risk of bias data
 
 ```{r tidy-review}
 #create variable for author/year
@@ -196,6 +195,45 @@ td_robis <- review_robis %>%
   select(review_author_year, everything()) %>% 
   arrange(review_author_year) 
 
+```
+
+Primary Study Eligibility Level: 
+* *REMOVE LEADING NUMBERS?* - ps_elig_td <- ps_eligibility %>%
+* pull list of primary studies that are included in our meta-analyses (eligible studies)
+* factor and rename the study name variable in the `citation_matrix` to match all other files
+
+```{r tidy-pseligibility}
+#create object to match revision code (no longer rename columns) - add tidying here e.g., remove leading numbers?
+ps_elig_td <- ps_eligibility
+
+#pull list of included studies
+inc_ps <- ps_eligibility %>% 
+  filter(decision == "Include") %>% 
+  pull(study) 
+
+#create object to match revision code (no longer rename columns) - add tidying here? 
+td_cm <- ps_cm
+
+```
+
+Primary Study Level:
+* specify numeric variable types for calculations
+* for numeric variables, specify that -999 is missing for calculations
+* extract a data frame of study ids and study names for merging
+* merge study names into all risk of bias data????????????????????????????????????????????????
+* *correct risk of bias data so each study has one corresponding risk of bias assessment*
+
+```{r tidy-study}
+#clean study level data
+td_study <- study_level %>% 
+  arrange(str_to_lower(study_author_year)) %>% 
+  mutate(cluster_size = as.numeric(cluster_size)) %>% 
+  mutate_if(is.numeric, ~ if_else(. == -999, NA_real_, .))
+  
+#extract study id and study names
+study_idbyname <- td_study %>% 
+  select(primary_study_id, study_author_year)
+
 #filter for studies with correct irob info
 irob_df <- study_irob %>% 
   filter(primary_study_id != 1088) %>%  #remove study that should be cluster rob assessment
@@ -209,43 +247,6 @@ crob_df <- study_crob %>%
 #select variables for robins-i info
 robins_df <- study_robins %>% 
   select(primary_study_id, ends_with("judgment"), robins_overall_rating)
-
-```
-
-Primary Study Eligibility Level: 
-* *REMOVE LEADING NUMBERS?* - ps_elig_td <- ps_eligibility %>%
-* pull list of primary studies that are included in our meta-analyses (eligible studies)
-* factor and rename the study name variable in the `citation_matrix` to match all other files
-
-```{r tidy-pseligibility}
-#pull list of included studies
-inc_ps <- ps_elig_td %>% 
-  filter(decision == "Include") %>% 
-  pull(study) 
-
-#factor and rename study variable in citation matrix with header file
-td_cm <- ps_cm %>% 
-  mutate(study = factor(`Primary Study`)) %>% 
-  select(-`Primary Study`) %>% 
-  select(study, everything()) 
-
-```
-
-Primary Study Level:
-* specify numeric variable types for calculations
-* for numeric variables, specify that -999 is missing for calculations
-* extract a data frame of study ids and study names for merging
-
-```{r tidy-study}
-#clean study level data
-td_study <- study_level %>% 
-  arrange(str_to_lower(study_author_year)) %>% 
-  mutate(cluster_size = as.numeric(cluster_size)) %>% 
-  mutate_if(is.numeric, ~ if_else(. == -999, NA_real_, .))
-  
-#extract study id and study names
-study_idbyname <- td_study %>% 
-  select(primary_study_id, study_author_year)
   
 ```
 
@@ -429,6 +430,7 @@ mode_databases <- review_databases %>%
   summarize(num_db = sum(value == "TRUE"),
             percent = sum(value == "TRUE") / nrow(review_level) * 100) %>% 
   arrange(desc(num_db))
+mode_databases 
 
 ```
 
@@ -480,13 +482,14 @@ Range and median of number of primary studies included in each review (using cit
 #using citation matrix without headers, transpose data 
 cmt <- as.data.frame(t(citation_matrix))
 
-#remove first row of citation matrix that contains column names
-df_overlap <- cmt %>% 
-  slice(-1) 
+#save first row as new column names
+colnames(cmt) <- cmt[1,]
 
+#remove first row of column names and second row with current study inclusions
 #create new variable to calculate number of studies in each review
-df_overlap <- df_overlap %>% 
-  mutate(num_stud = rowSums(!is.na(df_overlap)) - 1) #rowsum minus ID column
+df_overlap <- cmt %>% 
+  slice(-1:-2) %>% 
+  mutate(num_stud = rowSums(. == "1 - Yes")) 
 
 #range and median of number of studies in each review
 range(df_overlap$num_stud) 
@@ -499,7 +502,8 @@ Number and percentage of primary studies included in more than one review:
 ```{r morethanonereview}
 #create flag for if study is in more than one review
 cm_overlap <- td_cm %>% 
-  mutate(morethanone = ifelse(rowSums(!is.na(td_cm)) >2, "yes", "no"))
+  select(!`Current Review`) %>% 
+  mutate(morethanone = ifelse(rowSums(. == "1 - Yes") >1, "yes", "no"))
 
 #number and % included in more than one review
 sum(cm_overlap$morethanone == "yes")
@@ -512,15 +516,16 @@ Number and percentage of eligible primary studies included in more than one revi
 ```{r elig-morethanone}
 #filter for eligible primary studies
 elig_cm <- td_cm %>% 
+  select(-`Current Review`) %>% 
   filter(study %in% inc_ps) 
 
 #create flag if eligible study is included in more than one review
 elig_overlap <- elig_cm %>% 
-  mutate(morethanone = ifelse(rowSums(!is.na(elig_cm)) >2, "yes", "no"))
+  mutate(morethanone = ifelse(rowSums(. == "1 - Yes") >1, "yes", "no"))
 
 #number and % of eligible studies included in more than one review
-sum(elig_overlap$morethanone == "yes") #47
-sum(elig_overlap$morethanone == "yes") / nrow(elig_overlap) * 100 #70.149%
+sum(elig_overlap$morethanone == "yes") 
+sum(elig_overlap$morethanone == "yes") / nrow(elig_overlap) * 100 
 
 ```
 
@@ -529,8 +534,8 @@ Overall CCA percentage for all primary studies included across reviews:
 ```{r ccaR-overlap}
 #create dataframe for ccaR input (1 = included; 0 = excluded)
 ccar_input <- td_cm %>% 
-  mutate_if(is.character, ~ifelse(. == "x", 1, .)) %>% 
-  mutate_if(is.numeric, funs(replace(., is.na(.), 0))) 
+  select(-`Current Review`) %>% 
+  mutate_at(vars(-study), ~ifelse(. == "1 - Yes", 1, 0))  
 
 #calculate overall CCA
 cca(ccar_input) 
@@ -1435,3 +1440,958 @@ count_robinsratings
 
 ```
 
+## Meta-Analysis
+
+## Tables
+
+Add tables code for review and eligibility data that we do have!!!!!!!!! TO CHECK IF IT WILL RUN! AND UPDATE REPORT
+
+### Table 1. Descriptive characteristics per each included systematic review
+
+Select information from review level descriptives that will be presented in table 1:
+
+```{r table1-perreview}
+#select info we for table1
+t1_info <- td_review %>% 
+  select(review_id, review_author_year, databases_searched, search_date)
+
+```
+
+Calculate the number of included and eligible studies per review:
+
+```{r numstud-perreview}
+#transform to long to calculate # of included/eligible studies per review
+cm_long <- td_cm %>% 
+  select(-`Current Review`) %>% 
+  pivot_longer(cols = `Ahlen 2015`:`Zhang 2022`,
+               names_to = "review_author_year") 
+
+#count number of included studies per review
+numinc_perreview <- cm_long %>% 
+  group_by(review_author_year) %>% 
+  summarize(n_included = sum(value == "1 - Yes", na.rm = TRUE)) %>% 
+  ungroup()
+
+#count number of eligible studies per review
+numelig_perreview <- cm_long %>% 
+  filter(study %in% inc_ps) %>% 
+  group_by(review_author_year) %>% 
+  summarize(n_eligible = sum(value == "1 - Yes", na.rm = TRUE)) %>% 
+  ungroup()
+
+```
+
+Merge together all above information to get all table 1 data and format it for table 1:
+
+```{r t1-info-merge, warning = FALSE}
+#merge and format values
+t1 <- left_join(t1_info, numinc_perreview) %>% 
+  left_join(numelig_perreview) %>% 
+  mutate(search_date_format = ifelse(nchar(search_date) == 10, format(ymd(search_date), "%B %d, %Y"), search_date)) %>% 
+  mutate(search_date_format = ifelse(nchar(search_date) == 7, format(ym(search_date), "%B %Y"), search_date_format)) %>% 
+  mutate_all(~ replace(., . == -999, "Not Reported")) %>% 
+  select(review_author_year, databases_searched, search_date_format, n_included, n_eligible) %>% 
+  arrange(str_to_lower(review_author_year))
+
+```
+
+Create table 1:
+
+```{r t1-format}
+#create gt table and format
+table1_formatted <- t1 %>% 
+  gt() %>% 
+  cols_align(columns = c("n_included", "n_eligible"), align = "center") %>% 
+  tab_style(style = cell_text(align = "left"), locations = cells_column_labels(columns = c("n_included", "n_eligible"))) %>%
+  cols_width(review_author_year ~ px(125), databases_searched ~ px(275), search_date_format ~ px(150), starts_with("n") ~ px(75)) %>% 
+  cols_label(review_author_year = "Review", 
+            databases_searched = "Databases Searched",
+            search_date_format = "Search Date",
+            n_included = "Included Studies",
+            n_eligible = "Eligible Studies") %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1))),
+            locations = cells_body(columns = everything())) %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1)),
+                         cell_text(weight = "bold")),
+            locations = cells_column_labels()) %>% 
+  tab_options(column_labels.border.top.color = "black",
+              column_labels.border.bottom.color = "black",
+              table_body.border.bottom.color = "black",
+              table.border.top.color = "white",
+              heading.border.bottom.color = "black",
+              table_body.hlines.color = "white",
+              table.font.names = "Times New Roman")
+
+print(table1_formatted)
+
+```
+
+Save table 1 to `FOLDER NAME` project folder: (**specify final paths**)
+
+```{r t1-save}
+#save as word doc
+#gtsave(table1_formatted, filename = "table1_word.docx", device = "word", landscape = TRUE) #landscape doesn't work
+
+#save as pdf
+gtsave(table1_formatted, filename = "table1.pdf") 
+
+#save as html with larger column widths
+table1_html <- table1_formatted %>% 
+  cols_width(review_author_year ~ px(175), databases_searched ~ px(700), search_date_format ~ px(150), starts_with("n") ~ px(75))
+
+gtsave(table1_html, filename = "table1_html.html")
+
+```
+
+### Table 2. AMSTAR-2 Ratings per Question
+
+Select AMSTAR ratings and format to present in table 2:
+
+```{r amstar-table}
+#re-format ratings to report in table 2
+t2 <- amstar_ratings %>% 
+  mutate(review_author_year = as.factor(review_author_year)) %>% 
+  mutate_if(is.character, ~case_when(. == "1. High" ~ "H",
+                                     . == "2. Moderate" ~ "M",
+                                     . == "3. Low" ~ "L",
+                                     . == "4. Critically Low" ~ "CL",
+                                     . == "Yes" ~ "Y",
+                                     . == "Partial yes" ~ "PY",
+                                     . == "No" ~ "N",
+                                     TRUE ~ .)) %>% 
+  arrange(str_to_lower(review_author_year))
+
+```
+
+Create table 2 and format:
+
+```{r t2-format}
+#create gt table and format
+t2_formatted <- t2 %>% 
+  gt() %>% 
+  cols_label(review_author_year = "Review", 
+            amstar_confidence_rating = "Overall") %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1))),
+            locations = cells_body(columns = everything())) %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1)),
+                         cell_text(weight = "bold")),
+            locations = cells_column_labels()) %>% 
+   tab_options(column_labels.border.top.color = "black",
+              column_labels.border.bottom.color = "black",
+              table_body.border.bottom.color = "black",
+              table.border.top.color = "white",
+              heading.border.bottom.color = "black",
+              table_body.hlines.color = "white",
+              table.border.bottom.color = "white",
+              table.font.names = "Times New Roman") %>% 
+  cols_width(review_author_year ~ px(175),
+             amstar_confidence_rating ~ px(75),
+             everything() ~ px(35)) %>% 
+  tab_style(style = cell_text(align = "center"), locations = cells_column_labels(columns = everything())) %>% 
+  tab_style(style = cell_text(align = "left"), locations = cells_column_labels(columns = "review_author_year")) %>% 
+  tab_style(style = cell_text(align = "center"), locations = cells_body(columns = everything())) %>% 
+  tab_style(style = cell_text(align = "left"), locations = cells_body(columns = "review_author_year")) %>% 
+  tab_footnote(footnote = "N = No; PY = Partial Yes; Y = Yes; CL = Critically Low; L = Low; M = Moderate; H = High") %>% 
+  data_color(columns = 2:18,
+             fn = scales::col_factor(palette = c("#ab1d1a", "#8ace7e", "#e03531", "#ffda66", "#e03531", "#b2dfa8", "#8ace7e"),
+                                         domain = c("CL", "H", "L", "M", "N", "PY", "Y")))
+             
+          
+print(t2_formatted)
+
+```
+
+Save table 2 to `FOLDER NAME` project folder: 
+
+```{r save-t2}
+
+```
+
+
+
+## Figures
+
+### Figure 1. PRISMA flow diagram reporting
+
+Using Zotero info and reference_level file (for review level), calculate information for prisma & screening/eligibility reporting.
+
+Calculate numbers for PRISMA diagram (review-level):
+ * The only value not in our dataset is the number of records identified in the search before duplicate removal. Our last search on **DATE** yielded *5,221* records that were imported into Zotero before duplicate removal. 
+
+```{r prisma, echo = FALSE}
+#number of records imported for abstract screening
+nrow(td_reference)
+
+#number of records excluded at title/abstract (drops)
+#number of full-text references assessed for eligibility (keeps)
+summary(td_reference$screening_consensus)
+
+#number of *reviews* assessed for eligibility
+review_assessed <- td_screen_study %>% 
+  summarize(number_studies = n_distinct(review_id)) %>% 
+  pull(number_studies)
+review_assessed
+
+#number of *reviews* excluded during full-text eligibility 
+sum(td_screen_study$eligibility_consensus == "Not Eligible")
+
+#number of *reviews* excluded per reason
+rev_exclude_reason <- td_screen_study %>% 
+  filter(eligibility_consensus == "Not Eligible") %>% 
+  group_by(exclude_reason) %>% 
+  summarize(n = n())
+rev_exclude_reason
+
+#number of *reviews* included during full text eligibility 
+sum(td_screen_study$eligibility_consensus == "Eligible")
+
+#percentage of eligible reviews out of all full-text *reviews* assessed for eligibility
+sum(td_screen_study$eligibility_consensus == "Eligible") / sum(td_screen_study$screening_consensus == "1. Keep") * 100
+
+#percentage of eligible reviews out of all *references* identified
+sum(td_screen_study$eligibility_consensus == "Eligible") / nrow(td_reference) * 100
+
+```
+
+Calculate numbers for PRISMA diagram (primary study level):
+
+```{r prisma-ps}
+#total primary studies assessed
+nrow(ps_elig_td)
+
+#total eligible
+sum(ps_elig_td$decision == "Include")
+#percentage 
+sum(ps_elig_td$decision == "Include") / nrow(ps_elig_td) * 100
+
+#total not eligible (unclear = not eligible)
+sum(ps_elig_td$decision == "Exclude" | ps_elig_td$decision == "Unclear")
+
+#reasons for not eligible
+#unclear = awaiting classification 
+sum(ps_elig_td$decision == "Unclear")
+
+#collapsed reasons
+ps_exclude_reasons <- ps_elig_td %>% 
+  filter(decision == "Exclude") %>% 
+  group_by(reason) %>% 
+  summarize(n = n())
+ps_exclude_reasons
+
+```
+
+Create reproducible PRISMA diagram:
+
+```{r test-prisma}
+#load templates for prisma diagram
+template <- getPrisma(studyStatus)
+format <- getPrismaFormat(studyStatus)
+
+#edit template 
+ourformat <- format %>% 
+  filter(prismaLvl != 1) %>% 
+  mutate(prismaTxt = case_when(prismaLvl == 2 & nodeType == "Node" ~ "Records identified from search:\n(n = 5,221)", #from zotero
+                               prismaLvl == 3 & nodeType == "Node" ~ paste0("Records screened: \n(n = ", 
+                                                                            format(nrow(td_reference), big.mark = ","),")"),
+                               prismaLvl == 4 & nodeType == "Node" ~ paste0("Reports sought for retrieval: \n(n = ", 
+                                                                            sum(td_reference$screening_consensus == "1. Keep"), ")"),
+                               prismaLvl == 5 & nodeType == "Node" ~ paste0("Reports assessed for eligibility: \n(n = ", 
+                                                                            sum(td_reference$screening_consensus == "1. Keep"), "; k = ", 
+                                                                            review_assessed, ")"),
+                               prismaLvl == 6 & nodeType == "End" ~ paste0("Reviews included in overview: \n(k = ", 
+                                                                           sum(td_screen_study$eligibility_consensus == "Eligible"), "; j = ", 
+                                                                           nrow(ps_elig_td), ")"),
+                               prismaLvl == 2 & nodeType == "Filter" ~ paste0("Records removed before screening: \n(n = ", 
+                                                                              5221-nrow(td_reference), ")"),
+                               prismaLvl == 3 & nodeType == "Filter" ~ paste0("Records excluded: \n(n = ", 
+                                                                              sum(td_reference$screening_consensus == "2. Drop"), ")"),
+                               prismaLvl == 4 & nodeType == "Filter" ~ "Reports not retrieved: \n(n = 0)",
+                               prismaLvl == 5 & nodeType == "Filter" ~ paste0("Reviews excluded (k = ", 
+                                                                              sum(td_screen_study$eligibility_consensus == "Not Eligible"), "):",
+                                                                              "\n Anxiety focus only (k = ", 
+                                                                              subset(rev_exclude_reason, exclude_reason == "01. Ineligible due to anxiety focus only")$n, ")",
+                                                                              "\n Ineligible population (k = ", 
+                                                                              subset(rev_exclude_reason, exclude_reason == "02. Ineligible population (not K-12 students)")$n, ")",
+                                                                              "\n Ineligible interventions (k = ", 
+                                                                              subset(rev_exclude_reason, exclude_reason == "03. Ineligible interventions (not universal or secondary prevention)")$n, ")",
+                                                                              "\n Ineligible comparator (k = ", 
+                                                                              subset(rev_exclude_reason, exclude_reason == "04. Ineligible comparator (no comparator)")$n, ")",
+                                                                              "\n Ineligible outcomes (k = ", 
+                                                                              subset(rev_exclude_reason, exclude_reason == "05. Ineligible outcomes (no depression outcomes)")$n, ")",
+                                                                              "\n Ineligible setting (k = ", 
+                                                                              subset(rev_exclude_reason, exclude_reason == "07. Ineligible setting (not in school settings)")$n, ")",
+                                                                              "\n Not a systematic review (k = ", 
+                                                                              subset(rev_exclude_reason, exclude_reason == "08. Ineligible study design (not a systematic review)")$n, ")",
+                                                                              "\n Not a meta-analysis (k = ", 
+                                                                              subset(rev_exclude_reason, exclude_reason == "09. Ineligible study design (no meta-analysis)")$n, ")",
+                                                                              "\n Ineligible publication type (k = ", 
+                                                                              subset(rev_exclude_reason, exclude_reason == "10. Ineligible publication type (not a full report)")$n, ")",
+                                                                              "\n Other (k = ", 
+                                                                              subset(rev_exclude_reason, exclude_reason == "11. Other reason (please specify in notes)")$n, ")"),
+                               TRUE ~ prismaTxt)) %>% 
+  mutate(nodeType = ifelse(prismaLvl == 6, "Node", nodeType))
+
+  
+  
+#add new rows to template to include primary study information
+newnodes <- data.frame(prismaLvl = c(7, 6), 
+                      nodeType = c("End", "Filter"), 
+                      prismaTxt = c(paste0("Studies included in overview: \n(j = ", 
+                                           sum(ps_elig_td$decision == "Include"), ")"),
+                                    paste0("Studies excluded (j = ", 
+                                           sum(ps_elig_td$decision == "Exclude" | ps_elig_td$decision == "Unclear"), "):",
+                                    "\n Awaiting classification (j = ", 
+                                           sum(ps_elig_td$decision == "Unclear"), ")", 
+                                    "\n Anxiety focus only (j = ", 
+                                           subset(ps_exclude_reasons, reason == "01. Ineligible due to anxiety focus only")$n, ")",
+                                    "\n Ineligible population (j = ", 
+                                           subset(ps_exclude_reasons, reason == "02. Ineligible population (not K-12 students)")$n, ")",
+                                    "\n Ineligible intervention (j = ", 
+                                           subset(ps_exclude_reasons, reason == "03. Ineligible interventions (not universal or secondary prevention)")$n, ")",
+                                    "\n Ineligible comparator (j = ", 
+                                           subset(ps_exclude_reasons, reason == "04. Ineligible comparator (no comparator)")$n, ")",
+                                    "\n Ineligible setting (j = ", 
+                                           subset(ps_exclude_reasons, reason == "07. Ineligible setting (not in school settings)")$n, ")"
+                                    )))
+
+#merge together all nodes for prisma diagram
+finalformat <- rbind(ourformat, newnodes) 
+
+#create PRISMA diagram 
+f1 <- getPrisma(studyStatus, finalformat)
+grViz(f1)
+
+```
+
+**^^SHOULD WE INCLUDE ALL REASONS EVEN IF 0? If not reproducing exactly, yes.**
+
+### Figure 2. Overlap of included studies across systematic reviews
+
+```{r ccaR-f2}
+#format citation matrix including our review
+cca_inc <- td_cm %>% 
+  mutate_at(vars(-study), ~ifelse(. == "1 - Yes", 1, 0)) %>% 
+  rename(` Current Review` = `Current Review`)
+
+#create pairwise heatmap with CCA(%), including our review
+cca_heatmap(cca_inc, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 3) +
+  ggplot2::theme(
+      plot.caption = ggplot2::element_text(size = 16, margin=ggplot2::margin(30,0,0,0)),
+      legend.title = ggplot2::element_text(size = 16, face = "bold", vjust=4),
+      legend.text = ggplot2::element_text(size = 16),
+      legend.key.size = ggplot2::unit(1.0, "cm"),
+      legend.title.align = 0.5,
+      legend.text.align = 0.5,
+      axis.text.x=ggplot2::element_text(size = 16),
+      axis.text.y=ggplot2::element_text(size = 16),
+      axis.title=ggplot2::element_blank(),
+      axis.ticks=ggplot2::element_blank(),
+      axis.line=ggplot2::element_blank(),
+      panel.border=ggplot2::element_blank(),
+      panel.grid.major.x=ggplot2::element_line(colour = "grey80", linetype = "dashed"))
+
+```
+
+### Figure 3. Overlap of eligible studies across systematic reviews
+
+```{r ccaR-elig-f3}
+#format citation matrix of eligible studies, including our review
+cca_elig <- td_cm %>% 
+  filter(study %in% inc_ps) %>% 
+  mutate_at(vars(-study), ~ifelse(. == "1 - Yes", 1, 0))  %>% 
+  rename(` Current Review` = `Current Review`)
+
+#create pairwise heatmap with CCA(%)
+cca_heatmap(cca_elig, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 3.2) +
+  ggplot2::theme(
+      plot.caption = ggplot2::element_text(size = 16, margin=ggplot2::margin(30,0,0,0)),
+      legend.title = ggplot2::element_text(size = 16, face = "bold", vjust=4),
+      legend.text = ggplot2::element_text(size = 16),
+      legend.key.size = ggplot2::unit(1.0, "cm"),
+      legend.title.align = 0.5,
+      legend.text.align = 0.5,
+      axis.text.x = ggplot2::element_text(size = 16),
+      axis.text.y = ggplot2::element_text(size = 16),
+      axis.title = ggplot2::element_blank(),
+      axis.ticks = ggplot2::element_blank(),
+      axis.line = ggplot2::element_blank(),
+      panel.border = ggplot2::element_blank(),
+      panel.grid.major.x = ggplot2::element_line(colour = "grey80", linetype = "dashed"))
+
+```
+
+
+## Appendices
+
+### Appendix 1. List of excluded reviews
+
+Create dataframe with info for Appendix 1. List of excluded reviews at the full-text eligibility stage (excluded review & reason)
+
+```{r list-excl-review}
+#using reference level data, extract author/year from citation
+fm_ref <- td_reference %>% 
+  mutate(author = str_extract(citation, "^\\S+"),
+         authornocom = str_replace(author, ",", ""),
+         author_full = str_extract(citation, "^([^,(]*)"), #still needs manual cleaning of some references that are formatted differently
+         year = str_extract(citation, "[0-9]{4}"),
+         author_year = paste(author_full, year, sep = " "))
+
+#select not eligible studies and columns of info to report in appendix 1
+a1_info <- fm_ref %>% 
+  filter(eligibility_consensus == "Review Not Eligible" | eligibility_consensus == "Not Eligible") %>% 
+  mutate(exclude_reason = str_extract(exclude_reason, "(?<=\\.)\\s+(.*)")) %>% 
+  select(author_year, exclude_reason, screening_id, citation) %>% 
+  arrange(author_year)
+
+#correct review names that parsed incorrectly from incorrect citation
+a1 <- a1_info %>% 
+  mutate(author_year = case_when(author_year == " 2006" ~ "\"The Effect of Preventative\" 2006",
+                                 author_year == " 2010" ~ "\"Methods to Prevent\" 2010",
+                                 author_year == "Abdelfettah Elkchirid PhD 2022" ~ "Elkchirid 2022",
+                                 author_year == "Alba‐Elena Martinez‐Santos 2021" ~ "Martinez‐Santos 2021",
+                                 author_year == "Anonymous  2022" ~ "Steains 2021",
+                                 author_year == "Anonymous  2011" ~ "Teubert 2011",
+                                 author_year == "Bevan Jones 2018" ~ "Bevan-Jones 2018",
+                                 author_year == "Brown 2018" ~ "Brown 2018a",
+                                 author_year == "C Hendricks Brown 2018" ~ "Brown 2018b",
+                                 author_year == "Julian Edbrooke‐Childs 2021" ~ "Edbrooke‐Childs 2021",
+                                 author_year == "Joelle Yan Xin Chua 2020" ~ "Chua 2020",
+                                 author_year == "Josefa González Moller 2021" ~ "Moller 2021",
+                                 author_year == "Latefa Ali Dardas 2018" ~ "Dardas 2018",
+                                 author_year == "Negreiros de Carvalho 2021" ~ "Carvalho 2021",
+                                 author_year == "Soneson Emma 2020" ~ "Soneson 2020",
+                                 author_year == "Sun Jae Moon 2020" ~ "Moon 2020",
+                                 author_year == "Sylvia Deidre Kauer 2014" ~ "Kauer 2014",
+                                 author_year == "Zarakoviti Eleni 2021" ~ "Zarakoviti 2021",
+                                 TRUE ~ author_year)) %>% 
+  select(author_year, exclude_reason) %>% 
+  arrange(str_to_lower(stringi::stri_trans_general(author_year, "Latin-ASCII")))
+
+#export to format for report
+#openxlsx::write.xlsx(a1, "appendix1_info.xlsx")
+
+```
+
+Format table
+
+```{r a1-tableformat}
+a1_formatted <- a1 %>% 
+  gt()  %>% 
+  cols_label(author_year = "Excluded Review", 
+             exclude_reason = "Reason for Exclusion") %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1))),
+            locations = cells_body(columns = everything())) %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1)),
+                         cell_text(weight = "bold")),
+            locations = cells_column_labels()) %>% 
+  tab_options(column_labels.border.top.color = "black",
+              column_labels.border.bottom.color = "black",
+              table_body.border.bottom.color = "black",
+              table.border.top.color = "white",
+              heading.border.bottom.color = "black",
+              table_body.hlines.color = "white",
+              table.border.bottom.color = "white",
+              table.font.names = "Times New Roman")
+
+print(a1_formatted)
+
+#save as word
+#gtsave(a1_formatted, filename = "appendix1.docx")
+
+#save as html
+gtsave(a1_formatted, filename = "appendix1_html.html")
+
+#save as html
+gtsave(a1_formatted, filename = "appendix1_pdf.pdf")
+
+
+
+```
+
+### Appendix 2. List of excluded primary studies
+
+Create dataframe with info for Appendix 2. List of excluded primary studies (excluded study & reason)
+
+```{r list-excl-study}
+#filter for excluded studies and delete leading numbers from reason for reporting in tables
+a2 <- ps_elig_td %>% 
+  filter(decision == "Exclude" | decision == "Unclear") %>% 
+  select(study, reason, explanation, decision) %>% 
+  mutate(reason = case_when(decision == "Unclear" ~ "Awaiting classification",
+                            reason == "01. Ineligible due to anxiety focus only" ~ 
+                                            "Ineligible due to anxiety focus only",
+                            reason == "02. Ineligible population (not K-12 students)" ~
+                                            "Ineligible population (not K-12 students)",
+                            reason == "03. Ineligible interventions (not universal or secondary prevention)" ~
+                                            "Ineligible interventions (not universal or secondary prevention)",
+                            reason == "04. Ineligible comparator (no comparator)" ~
+                                            "Ineligible comparator (no comparator)",
+                            reason == "05. Ineligible outcomes (no depression outcomes)" ~
+                                            "Ineligible outcomes (no depression outcomes)",
+                            reason == "07. Ineligible setting (not in school settings)" ~
+                                            "Ineligible setting (not in school settings)",
+                            reason == "08. Ineligible study design (not a systematic review)" ~
+                                            "Ineligible study design (not a systematic review)",
+                            reason == "09. Ineligible study design (no meta-analysis)" ~
+                                            "Ineligible study design (no meta-analysis)",
+                            reason == "10. Ineligible publication type (not a full report)" ~
+                                            "Ineligible publication type (not a full report)",
+                            reason == "11. Other reason (please specify in notes)" ~
+                                            "Other reason (please specify in notes)",
+                                          TRUE ~ reason)) %>% 
+  select(study, reason) %>% 
+  arrange(str_to_lower(study))
+
+#export to format for report
+#openxlsx::write.xlsx(a2, "appendix2_info.xlsx")
+
+
+
+```
+
+Format table
+
+```{r a2-formattable}
+#create gt table
+a2_formatted <- a2 %>% 
+  gt()  %>% 
+  cols_label(study = "Excluded Study", 
+             reason = "Reason for Exclusion") %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1))),
+            locations = cells_body(columns = everything())) %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1)),
+                         cell_text(weight = "bold")),
+            locations = cells_column_labels()) %>% 
+  tab_options(column_labels.border.top.color = "black",
+              column_labels.border.bottom.color = "black",
+              table_body.border.bottom.color = "black",
+              table.border.top.color = "white",
+              heading.border.bottom.color = "black",
+              table_body.hlines.color = "white",
+              table.border.bottom.color = "white",
+              table.font.names = "Times New Roman")
+
+print(a2_formatted)
+
+#save as word
+#gtsave(a2_formatted, filename = "appendix2.docx")
+
+#save as html
+gtsave(a2_formatted, filename = "appendix2_html.html")
+
+#save as html
+gtsave(a2_formatted, filename = "appendix2_pdf.pdf")
+
+```
+
+### Appendix 3. Primary studies awaiting classification 
+
+Create dataframe with info for Appendix 3. List of unclear/awaiting classification reviews and primary studies
+ *No reviews awaiting classification*
+ For primary studies: 
+
+```{r a3-unclear-ps}
+#filter for studies awaiting classification
+ps_unclear <- ps_elig_td %>% 
+  filter(decision == "Unclear") 
+
+#rename linking key in primary study references dataframe
+ps_ref <- ps_allreferences %>% 
+  rename(study = `Primary Study`,
+         citation = Reports) %>% 
+  distinct(study, .keep_all = TRUE) #only keep main study reference
+  
+#join primary study reference info with studies awaiting classification 
+a3_info <- left_join(ps_unclear, ps_ref, by = "study")
+
+#collapse reasons 
+a3 <- a3_info %>% 
+  mutate(reason = case_when(str_detect(explanation, "Ask authors") ~ "Awaiting response to author query",
+                            str_detect(explanation, "No document") ~ "Unpublished document",
+                            str_detect(explanation, "Not in English") ~ "No document in English",
+                            TRUE ~ explanation)) %>% 
+  select(study, reason, citation)
+
+#export to format for report
+#openxlsx::write.xlsx(a3, "appendix3_info.xlsx")
+
+```
+
+```{r a3-formattable}
+#create formatted gt table
+a3_formatted <- a3 %>% 
+  gt()  %>% 
+  cols_label(study = "Study", 
+             reason = "Reason",
+             citation = "Reference") %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1))),
+            locations = cells_body(columns = everything())) %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1)),
+                         cell_text(weight = "bold")),
+            locations = cells_column_labels()) %>% 
+  tab_options(column_labels.border.top.color = "black",
+              column_labels.border.bottom.color = "black",
+              table_body.border.bottom.color = "black",
+              table.border.top.color = "white",
+              heading.border.bottom.color = "black",
+              table_body.hlines.color = "white",
+              table.border.bottom.color = "white",
+              table.font.names = "Times New Roman")
+
+print(a3_formatted)
+
+# #save as word
+# gtsave(a2_formatted, filename = "appendix2.docx")
+# 
+# #save as html
+# gtsave(a2_formatted, filename = "appendix2_html.html")
+# 
+# #save as html
+# gtsave(a2_formatted, filename = "appendix2_pdf.pdf")
+
+
+
+```
+
+**ABOVE ONE AND REST OF BELOW PRODUCES TABLE WITH INCORRECTLY FORMATTED REFERENCE - WAITING TO SEE IF PAPAJA PACKAGE AND .BIB WILL HELP WITH THIS FOR EXACT REPLICATION**
+
+### Appendix 4. Descriptive characteristics for each included systematic review (appendix 4) 
+
+ * don't have data on other searches, depression definition, conclusions, or references per review data
+
+```{r per-review-descriptives}
+#select relevant appendix 4 info
+a4_info <- td_review %>% 
+  left_join(numelig_perreview) %>% 
+  left_join(numinc_perreview) %>% 
+  mutate(search_date = ifelse(nchar(search_date) == 10, format(ymd(search_date), "%B %d, %Y"), search_date)) %>% 
+  mutate(search_date = ifelse(nchar(search_date) == 7, format(ym(search_date), "%B %Y"), search_date)) %>% 
+  mutate(across(everything(), ~ifelse(.x == -999, "Not reported", .x)),
+         n_included = as.character(n_included),
+         n_eligible = as.character(n_eligible)) %>% 
+  select(review_author_year, review_eligibility_criteria, databases_searched, 
+         search_date, n_included, n_eligible, prisma_flow_diagram, review_registration, review_availability_statement) %>% 
+  arrange(str_to_lower(review_author_year)) 
+
+
+#MISSING TITLE (needs formatted from reference), and ALL REFERENCES (waiting to see if papaja can help with formatting), 
+
+#merge with lists of included and eligible studies
+#a4 <- left_join(a4_info, t1_stud_cols) #taking out list of studies
+
+```
+
+```{r a4-maptable-TEST, results ='asis'}
+#attempt to replicate multiple tables
+##split data frame into list of data frames
+a4_dflist <- map(1:nrow(a4_info), ~a4_info[.x, ])
+
+##transpose each data frame in the list
+# a4_dflist_t <- map(a4_dflist, ~t(.))
+
+##create gt table for each data frame in list
+# a4_gtlist <- map(a4_dflist, ~ gt(.) %>% 
+#                    tab_header(title = " "))
+# 
+# ##extract raw HTML for each gt table and concatenate into one string
+# html_code <- a4_gtlist %>% 
+#   map(as_raw_html) %>% 
+#   reduce(paste)
+# 
+# ##write HTML to a file
+# writeLines(html_code, "test_a4.html")
+# 
+# print(html_code)
+
+#TRY AGAIN - transfer to long format
+
+##transfer to long format
+df_list_long <- map(a4_dflist, ~ .x %>% 
+                      pivot_longer(cols = everything(), 
+                                   names_to = "variable", 
+                                   values_to = "value") %>% 
+                      mutate(variable = case_when(variable == "review_author_year" ~ "Review",
+                                                  variable == "review_eligibility_criteria" ~ "Eligibility Criteria",
+                                                  variable == "databases_searched" ~ "Databases Searched",
+                                                  variable == "search_date" ~ "Search Date",
+                                                  variable == "prisma_flow_diagram" ~ "Prisma Diagram", 
+                                                  variable == "review_registration" ~ "Registration",
+                                                  variable == "review_availability_statement" ~ "Data Availability Statement",
+                                                  variable == "n_eligible" ~ "Eligible Studies",
+                                                  variable == "n_included" ~ "Included Studies",
+                                                  TRUE ~ variable)) 
+                    )
+  
+##create gt table for each data frame in list
+a4long_gtlist <- map(df_list_long, ~ gt(.) %>% 
+                   tab_header(title = " "))
+
+##extract raw HTML for each gt table and concatenate into one string
+html_code2 <- a4long_gtlist %>% 
+  map(as_raw_html) %>% 
+  reduce(paste)
+##write HTML to a file
+writeLines(html_code2, "test_a4long.html")
+##print in document
+htmltools::HTML(html_code2)
+
+
+
+#TRY AGAIN (word table with page breaks)
+#combine into one single dataframe
+combined_a4 <- bind_rows(df_list_long, .id = "source") %>% 
+  mutate(source = as.numeric(source)) #%>% 
+  #group_by(source)
+
+#create full gt table
+gt_fulltable <- combined_a4 %>% 
+  gt(rowname_col = "variable", groupname_col = "source") 
+
+gt_preview(gt_fulltable)
+#gtsave(gt_fulltable, file = "a4_long.docx")
+##^^ Still no page breaks, but can do in word. 
+
+#options(gt.row_group.sep = "\n")
+# testbreaks <- combined_a4 %>% 
+#   gt(id = "one",
+#     groupname_col = c("source"), 
+#     rownames_to_stub = FALSE, 
+#     row_group.sep = getOption("gt.row_group.sep", "\n")
+# 
+#   ) %>%
+# 
+#   opt_css(
+#     css = "
+# 
+#     #one .gt_group_heading {
+# 
+#     white-space:pre-wrap;
+#     word-wrap:break-word;
+# 
+# 
+#     }
+# 
+#     "
+#   )
+# gt_preview(testbreaks)
+# gtsave(testbreaks, file = "a4_breaks.docx")
+  
+#TRYING
+# gt_table_test <- map(a4_dflist, function(x) {
+#   gt(t(as.data.frame(x)))
+# })
+
+# tgt_test <- function(df) {
+#   df %>% 
+#     gt() %>% 
+#     tab_transpose()
+# }
+# 
+# ####generate list of transposed gt tables
+# gt_list_test <- map(a4_dflist, tgt_test)
+
+#test_gtlist <- map(a4_dflist, ~ gt(t(.), rownames_to_stub = FALSE))
+
+
+#TRY AGAIN
+# Create a new Word document
+# doc <- read_docx()
+# 
+# walk(a4long_gtlist, function(x) {
+#   add_flextable(doc, x)
+#   add_page_break(doc)
+# })
+# gtsave(doc, "all_a4tables.docx")
+
+
+#TRY AGAIN
+# Create a tab_booktabs object from the gt_list
+#long_table <- a4long_gtlist %>%
+ # tab_booktabs()
+
+# long_table <- bind_rows(a4long_gtlist)
+# wide_table <- bind_cols(a4long_gtlist)
+
+# # Create a new Word document
+# doc <- read_docx()
+# 
+# # Insert the long_table into the document
+# doc <- body_add_flextable(doc, long_table)
+# 
+# # Save the Word document
+# print(doc, target = "long_table.docx")
+# 
+# # Save the Excel file
+# write_xlsx(long_table, "long_table.xlsx")
+# 
+# 
+# #TRY AGAIN
+# # Create a temporary HTML file
+# html_file <- tempfile(fileext = ".html")
+# cat(html_code2, file = html_file)
+# 
+# # Capture a screenshot of the HTML table
+# img_file <- tempfile(fileext = ".png")
+# webshot(html_file, file = img_file)
+# 
+# # Load the image into R
+# img <- magick::image_read(img_file)
+# 
+# # Create a new Word document
+# doc <- read_docx()
+# 
+# # Insert the image into the document as a paragraph
+# doc <- body_add_par(doc, "", style = "Normal")
+# doc <- body_add_image(doc, img)
+# 
+# # Save the document
+# print(doc, target = "table.docx")
+# 
+# # Clean up the temporary files
+# file.remove(html_file, img_file)
+# 
+# #ANOTHER TIME
+# #attempt to save as word
+# library(officer)
+# doc <- read_docx()
+# doc <- body_add_par(doc, html_code2)
+# print(doc, target = "a4.docx")
+# 
+# 
+# 
+# # Add each table to the document
+# # for (i in seq_along(a4long_gtlist)) {
+# #   doc <- body_add(doc, paste0("<h2>", names(a4long_gtlist)[i], "</h2>"))
+# #   doc <- body_add(doc, as_pretty_html(a4long_gtlist[[i]]))
+# #   doc <- body_add(doc, "<br>")
+# # }
+# 
+# # Save the document
+# print(doc, target = "tables.docx")
+# 
+# 
+# 
+# 
+# # Convert the HTML code to a data frame
+# df <- htmlTable::htmlTableToDataFrame(html_code2)
+# 
+# # Create a new Word document
+# doc <- read_docx()
+# 
+# # Insert the data frame into the document as a table
+# doc <- body_add_table(doc, df)
+# 
+# # Save the document
+# print(doc, target = "table.docx")
+
+
+
+#TRYING BREAKS for html table = FINAL
+
+
+list_gt <- lapply(split(combined_a4, combined_a4$source), function(x) {
+  gt(x) %>% 
+    cols_hide("source") %>% 
+    cols_label(variable = "",
+               value = "") %>% 
+    tab_style(style = list(cell_text(weight = "bold")),
+            locations = cells_body(columns = "variable")) %>% 
+    tab_options(table.font.names = "Times New Roman")
+    
+    
+    #tab_header(title = paste("Review", unique(x$source)))
+})
+
+
+
+#HTML table
+html_code3 <- list_gt %>% 
+  map(as_raw_html) %>% 
+  reduce(paste)
+#print in document
+htmltools::HTML(html_code3)
+writeLines(html_code3, "test_breaks.html")
+
+# #trying breaks for word table
+# gt_break_table <- combined_a4 %>% 
+#   gt(rowname_col = "variable", groupname_col = "source") %>% 
+#   
+#   tab_options(split_table = ~ .x %>% tab_group(groupname_col = "source"))
+
+
+
+
+
+#TRY split
+split_a4 <- split(combined_a4, combined_a4$source)
+
+tables <- lapply(split_a4, function(x) {
+  gt(x) %>% 
+    tab_header(title = paste("Review", unique(x$source)))
+})
+
+tables
+#could print all individually in rmd
+
+#try stack
+# tablesstack <- tab_row_group(tables[[1]], tables[[2]])
+# 
+# combined_table <- tables[[1]]
+# for (i in 2:length(tables)) {
+#   combined_table <- tab_row_group(combined_table, tables[[i]])
+# }
+
+
+```
+
+```{r a4-tables}
+###################FINAL CODE FOR HTML TABLE
+##split data frame into list of data frames
+a4_dflist <- map(1:nrow(a4_info), ~a4_info[.x, ])
+##transfer to long format
+df_list_long <- map(a4_dflist, ~ .x %>% 
+                      pivot_longer(cols = everything(), 
+                                   names_to = "variable", 
+                                   values_to = "value") %>% 
+                      mutate(variable = case_when(variable == "review_author_year" ~ "Review",
+                                                  variable == "review_eligibility_criteria" ~ "Eligibility Criteria",
+                                                  variable == "databases_searched" ~ "Databases Searched",
+                                                  variable == "search_date" ~ "Search Date",
+                                                  variable == "prisma_flow_diagram" ~ "Prisma Diagram", 
+                                                  variable == "review_registration" ~ "Registration",
+                                                  variable == "review_availability_statement" ~ "Data Availability Statement",
+                                                  variable == "n_eligible" ~ "Eligible Studies",
+                                                  variable == "n_included" ~ "Included Studies",
+                                                  TRUE ~ variable)))
+
+#combine into one single dataframe
+combined_a4 <- bind_rows(df_list_long, .id = "source") %>% 
+  mutate(source = as.numeric(source))
+
+#TRYING BREAKS for html table = FINAL
+
+
+list_gt <- lapply(split(combined_a4, combined_a4$source), function(x) {
+  gt(x) %>% 
+    cols_hide("source") %>% 
+    cols_label(variable = "",
+               value = "") %>% 
+    tab_style(style = list(cell_text(weight = "bold")),
+            locations = cells_body(columns = "variable")) %>% 
+    tab_options(column_labels.border.top.color = "black",
+                table.font.names = "Times New Roman")
+})
+
+#view sample
+print(list_gt[1])
+
+
+#HTML table
+html_code3 <- list_gt %>% 
+  map(as_raw_html) %>% 
+  reduce(paste)
+#print in document
+htmltools::HTML(html_code3)
+writeLines(html_code3, "test_breaks.html")
+
+```
