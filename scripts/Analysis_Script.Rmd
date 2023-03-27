@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(pacman)
 
 #install and load required packages
-p_load(devtools, here, readxl, janitor, tidyverse, openxlsx, robumeta, metafor, lubridate, gt, webshot2, prismadiagramR) 
+p_load(devtools, here, readxl, janitor, tidyverse, openxlsx, robumeta, metafor, lubridate, gt, webshot2, DiagrammeR, prismadiagramR, stringi, htmltools, bib2df) 
 p_load_gh("thdiakon/ccaR", "mcguinlu/robvis") #from github
 
 ```
@@ -25,6 +25,7 @@ p_load_gh("thdiakon/ccaR", "mcguinlu/robvis") #from github
 
 Import review-level reference and eligibility screening data in `Depression_Overview_Search_Data.xlsx`
 * `reference_level`: One row per reference ID screened, abstract and eligibility decisions (all imported review citations)
+* `review_bib`: One row per eligible review, main citation from Zotero for eligible reviews
 
 ```{r import-reference-level}
 #set path to search data
@@ -33,6 +34,9 @@ search_path <- (here("data", "Depression_Overview_Search_Data.xlsx"))
 #import reference_level excel sheet
 reference_level <- read_excel(search_path, sheet = "reference_level",
                                       guess_max = 123456) 
+
+#import Zotero reference information for eligible reviews
+review_bib <- bib2df(here("data", "included_reviews.bib"))
 
 ```
 
@@ -179,9 +183,12 @@ td_review <- review_level %>%
                                        review_author_year == "Zoonen 2014" ~ "van Zoonen 2014",
                                        TRUE ~ review_author_year)) #correct parsing errors
 
-#pull list of review ids and review names (author/year)
+#create data frame of review ids and review names (author/year)
 review_idbyname <- td_review %>% 
   select(review_id, review_author_year)
+
+#pull list of included reviews
+inc_rev <- review_idbyname$review_author_year
 
 #merge review names into review_amstar data
 td_amstar <- review_amstar %>% 
@@ -323,13 +330,13 @@ sum(td_reference$screening_consensus == "1. Keep") / nrow(td_reference) * 100
 Number of eligible reviews: 
 
 ```{r elig-reviews}
-#create dataframe at the study level for reporting # of *reviews*
-td_screen_study <- td_reference %>% 
+#create dataframe at the review level for reporting # of *reviews*
+td_screen_review <- td_reference %>% 
   filter(!is.na(review_id)) %>% 
   distinct(review_id, .keep_all = TRUE)
 
 #number of eligible *reviews*
-sum(td_screen_study$eligibility_consensus == "Eligible")
+sum(td_screen_review$eligibility_consensus == "Eligible")
 
 ```
 
@@ -337,7 +344,7 @@ Percentage of eligible reviews out of all full-text reviews assessed for eligibi
 
 ```{r elig-review-percent}
 #percent of eligible reviews out of all full-texts assessed 
-sum(td_screen_study$eligibility_consensus == "Eligible") / sum(td_screen_study$screening_consensus == "1. Keep") * 100
+sum(td_screen_review$eligibility_consensus == "Eligible") / sum(td_screen_review$screening_consensus == "1. Keep") * 100
 
 ```
 
@@ -345,7 +352,7 @@ Percentage of eligible reviews out of all citations identified:
 
 ```{r elig-review-percent2}
 #percent of eligible reviews out of all citations 
-sum(td_screen_study$eligibility_consensus == "Eligible") / nrow(td_reference) * 100
+sum(td_screen_review$eligibility_consensus == "Eligible") / nrow(td_reference) * 100
 
 ```
 
@@ -1463,7 +1470,7 @@ Calculate the number of included and eligible studies per review:
 #transform to long to calculate # of included/eligible studies per review
 cm_long <- td_cm %>% 
   select(-`Current Review`) %>% 
-  pivot_longer(cols = `Ahlen 2015`:`Zhang 2022`,
+  pivot_longer(cols = `Ahlen 2015`:`Zhang 2023`,
                names_to = "review_author_year") 
 
 #count number of included studies per review
@@ -1616,7 +1623,7 @@ Save table 2 to `FOLDER NAME` project folder:
 Using Zotero info and reference_level file (for review level), calculate information for prisma & screening/eligibility reporting.
 
 Calculate numbers for PRISMA diagram (review-level):
- * The only value not in our dataset is the number of records identified in the search before duplicate removal. Our last search on **DATE** yielded *5,221* records that were imported into Zotero before duplicate removal. 
+ * The only value not in our dataset is the number of records identified in the search before duplicate removal. Our last search on **DATE** yielded *5,223* records that were imported into Zotero before duplicate removal. 
 
 ```{r prisma, echo = FALSE}
 #number of records imported for abstract screening
@@ -1627,29 +1634,29 @@ nrow(td_reference)
 summary(td_reference$screening_consensus)
 
 #number of *reviews* assessed for eligibility
-review_assessed <- td_screen_study %>% 
+review_assessed <- td_screen_review %>% 
   summarize(number_studies = n_distinct(review_id)) %>% 
   pull(number_studies)
 review_assessed
 
 #number of *reviews* excluded during full-text eligibility 
-sum(td_screen_study$eligibility_consensus == "Not Eligible")
+sum(td_screen_review$eligibility_consensus == "Not Eligible")
 
 #number of *reviews* excluded per reason
-rev_exclude_reason <- td_screen_study %>% 
+rev_exclude_reason <- td_screen_review %>% 
   filter(eligibility_consensus == "Not Eligible") %>% 
   group_by(exclude_reason) %>% 
   summarize(n = n())
 rev_exclude_reason
 
 #number of *reviews* included during full text eligibility 
-sum(td_screen_study$eligibility_consensus == "Eligible")
+sum(td_screen_review$eligibility_consensus == "Eligible")
 
 #percentage of eligible reviews out of all full-text *reviews* assessed for eligibility
-sum(td_screen_study$eligibility_consensus == "Eligible") / sum(td_screen_study$screening_consensus == "1. Keep") * 100
+sum(td_screen_review$eligibility_consensus == "Eligible") / sum(td_screen_review$screening_consensus == "1. Keep") * 100
 
 #percentage of eligible reviews out of all *references* identified
-sum(td_screen_study$eligibility_consensus == "Eligible") / nrow(td_reference) * 100
+sum(td_screen_review$eligibility_consensus == "Eligible") / nrow(td_reference) * 100
 
 ```
 
@@ -1690,7 +1697,7 @@ format <- getPrismaFormat(studyStatus)
 #edit template 
 ourformat <- format %>% 
   filter(prismaLvl != 1) %>% 
-  mutate(prismaTxt = case_when(prismaLvl == 2 & nodeType == "Node" ~ "Records identified from search:\n(n = 5,221)", #from zotero
+  mutate(prismaTxt = case_when(prismaLvl == 2 & nodeType == "Node" ~ "Records identified from search:\n(n = 5,223)", #from zotero
                                prismaLvl == 3 & nodeType == "Node" ~ paste0("Records screened: \n(n = ", 
                                                                             format(nrow(td_reference), big.mark = ","),")"),
                                prismaLvl == 4 & nodeType == "Node" ~ paste0("Reports sought for retrieval: \n(n = ", 
@@ -1699,15 +1706,15 @@ ourformat <- format %>%
                                                                             sum(td_reference$screening_consensus == "1. Keep"), "; k = ", 
                                                                             review_assessed, ")"),
                                prismaLvl == 6 & nodeType == "End" ~ paste0("Reviews included in overview: \n(k = ", 
-                                                                           sum(td_screen_study$eligibility_consensus == "Eligible"), "; j = ", 
+                                                                           sum(td_screen_review$eligibility_consensus == "Eligible"), "; j = ", 
                                                                            nrow(ps_elig_td), ")"),
                                prismaLvl == 2 & nodeType == "Filter" ~ paste0("Records removed before screening: \n(n = ", 
-                                                                              5221-nrow(td_reference), ")"),
+                                                                              5223-nrow(td_reference), ")"),
                                prismaLvl == 3 & nodeType == "Filter" ~ paste0("Records excluded: \n(n = ", 
                                                                               sum(td_reference$screening_consensus == "2. Drop"), ")"),
                                prismaLvl == 4 & nodeType == "Filter" ~ "Reports not retrieved: \n(n = 0)",
                                prismaLvl == 5 & nodeType == "Filter" ~ paste0("Reviews excluded (k = ", 
-                                                                              sum(td_screen_study$eligibility_consensus == "Not Eligible"), "):",
+                                                                              sum(td_screen_review$eligibility_consensus == "Not Eligible"), "):",
                                                                               "\n Anxiety focus only (k = ", 
                                                                               subset(rev_exclude_reason, exclude_reason == "01. Ineligible due to anxiety focus only")$n, ")",
                                                                               "\n Ineligible population (k = ", 
@@ -1763,9 +1770,17 @@ grViz(f1)
 
 ```
 
+Save figure 1 to `FOLDER NAME` project folder: 
+
+```{r save-f1}
+
+```
+
 **^^SHOULD WE INCLUDE ALL REASONS EVEN IF 0? If not reproducing exactly, yes.**
 
 ### Figure 2. Overlap of included studies across systematic reviews
+
+Create CCA heatmap of overlap of included studies across reviews:
 
 ```{r ccaR-f2}
 #format citation matrix including our review
@@ -1792,7 +1807,15 @@ cca_heatmap(cca_inc, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 3) +
 
 ```
 
+Save figure 2 to `FOLDER NAME` project folder: 
+
+```{r save-f2}
+
+```
+
 ### Figure 3. Overlap of eligible studies across systematic reviews
+
+Filter for studies that met our inclusion criteria and create CCA heatmap of our eligible studies across reviews: 
 
 ```{r ccaR-elig-f3}
 #format citation matrix of eligible studies, including our review
@@ -1820,19 +1843,24 @@ cca_heatmap(cca_elig, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 3.2) +
 
 ```
 
+Save figure 3 to `FOLDER NAME` project folder: 
+
+```{r save-f3}
+
+```
 
 ## Appendices
 
 ### Appendix 1. List of excluded reviews
 
-Create dataframe with info for Appendix 1. List of excluded reviews at the full-text eligibility stage (excluded review & reason)
+Create data frame with info Appendix 1. List of excluded reviews at the full-text eligibility stage (excluded review & reason):
 
 ```{r list-excl-review}
 #using reference level data, extract author/year from citation
 fm_ref <- td_reference %>% 
   mutate(author = str_extract(citation, "^\\S+"),
          authornocom = str_replace(author, ",", ""),
-         author_full = str_extract(citation, "^([^,(]*)"), #still needs manual cleaning of some references that are formatted differently
+         author_full = str_extract(citation, "^([^,(]*)"),
          year = str_extract(citation, "[0-9]{4}"),
          author_year = paste(author_full, year, sep = " "))
 
@@ -1867,14 +1895,12 @@ a1 <- a1_info %>%
   select(author_year, exclude_reason) %>% 
   arrange(str_to_lower(stringi::stri_trans_general(author_year, "Latin-ASCII")))
 
-#export to format for report
-#openxlsx::write.xlsx(a1, "appendix1_info.xlsx")
-
 ```
 
-Format table
+Create table for appendix 1 and format: 
 
 ```{r a1-tableformat}
+#create gt table and format
 a1_formatted <- a1 %>% 
   gt()  %>% 
   cols_label(author_year = "Excluded Review", 
@@ -1895,6 +1921,11 @@ a1_formatted <- a1 %>%
 
 print(a1_formatted)
 
+```
+
+Save appendix 1 to `FOLDER NAME` project folder: 
+
+```{r save-a1}
 #save as word
 #gtsave(a1_formatted, filename = "appendix1.docx")
 
@@ -1903,20 +1934,17 @@ gtsave(a1_formatted, filename = "appendix1_html.html")
 
 #save as html
 gtsave(a1_formatted, filename = "appendix1_pdf.pdf")
-
-
-
 ```
 
 ### Appendix 2. List of excluded primary studies
 
-Create dataframe with info for Appendix 2. List of excluded primary studies (excluded study & reason)
+Create data frame with info for appendix 2 - list of excluded primary studies (excluded study & reason):
 
 ```{r list-excl-study}
 #filter for excluded studies and delete leading numbers from reason for reporting in tables
 a2 <- ps_elig_td %>% 
   filter(decision == "Exclude" | decision == "Unclear") %>% 
-  select(study, reason, explanation, decision) %>% 
+  select(study, reason, rationale, decision) %>% 
   mutate(reason = case_when(decision == "Unclear" ~ "Awaiting classification",
                             reason == "01. Ineligible due to anxiety focus only" ~ 
                                             "Ineligible due to anxiety focus only",
@@ -1942,17 +1970,12 @@ a2 <- ps_elig_td %>%
   select(study, reason) %>% 
   arrange(str_to_lower(study))
 
-#export to format for report
-#openxlsx::write.xlsx(a2, "appendix2_info.xlsx")
-
-
-
 ```
 
-Format table
+Create table for appendix 2 and format: 
 
 ```{r a2-formattable}
-#create gt table
+#create gt table and format
 a2_formatted <- a2 %>% 
   gt()  %>% 
   cols_label(study = "Excluded Study", 
@@ -1973,6 +1996,11 @@ a2_formatted <- a2 %>%
 
 print(a2_formatted)
 
+```
+
+Save appendix 2 to `FOLDER NAME` project folder: 
+
+```{r a2-save}
 #save as word
 #gtsave(a2_formatted, filename = "appendix2.docx")
 
@@ -1981,14 +2009,12 @@ gtsave(a2_formatted, filename = "appendix2_html.html")
 
 #save as html
 gtsave(a2_formatted, filename = "appendix2_pdf.pdf")
-
 ```
 
 ### Appendix 3. Primary studies awaiting classification 
 
-Create dataframe with info for Appendix 3. List of unclear/awaiting classification reviews and primary studies
+Create data frame with info for appendix 3 - list of unclear/awaiting classification reviews and primary studies:
  *No reviews awaiting classification*
- For primary studies: 
 
 ```{r a3-unclear-ps}
 #filter for studies awaiting classification
@@ -1997,8 +2023,7 @@ ps_unclear <- ps_elig_td %>%
 
 #rename linking key in primary study references dataframe
 ps_ref <- ps_allreferences %>% 
-  rename(study = `Primary Study`,
-         citation = Reports) %>% 
+  rename(citation = report) %>% 
   distinct(study, .keep_all = TRUE) #only keep main study reference
   
 #join primary study reference info with studies awaiting classification 
@@ -2006,16 +2031,15 @@ a3_info <- left_join(ps_unclear, ps_ref, by = "study")
 
 #collapse reasons 
 a3 <- a3_info %>% 
-  mutate(reason = case_when(str_detect(explanation, "Ask authors") ~ "Awaiting response to author query",
-                            str_detect(explanation, "No document") ~ "Unpublished document",
-                            str_detect(explanation, "Not in English") ~ "No document in English",
-                            TRUE ~ explanation)) %>% 
+  # mutate(reason = case_when(str_detect(rationale, "Ask authors") ~ "Awaiting response to author query",
+  #                           str_detect(rationale, "No document") ~ "Unpublished document",
+  #                           str_detect(rationale, "Not in English") ~ "No document in English",
+  #                           TRUE ~ rationale)) %>% 
   select(study, reason, citation)
 
-#export to format for report
-#openxlsx::write.xlsx(a3, "appendix3_info.xlsx")
-
 ```
+
+Create table for appendix 3 and format:
 
 ```{r a3-formattable}
 #create formatted gt table
@@ -2040,6 +2064,12 @@ a3_formatted <- a3 %>%
 
 print(a3_formatted)
 
+
+```
+
+Save appendix 3 to `FOLDER NAME` project folder: 
+
+```{r a3-save}
 # #save as word
 # gtsave(a2_formatted, filename = "appendix2.docx")
 # 
@@ -2048,16 +2078,13 @@ print(a3_formatted)
 # 
 # #save as html
 # gtsave(a2_formatted, filename = "appendix2_pdf.pdf")
-
-
-
 ```
 
 **ABOVE ONE AND REST OF BELOW PRODUCES TABLE WITH INCORRECTLY FORMATTED REFERENCE - WAITING TO SEE IF PAPAJA PACKAGE AND .BIB WILL HELP WITH THIS FOR EXACT REPLICATION**
 
-### Appendix 4. Descriptive characteristics for each included systematic review (appendix 4) 
+### Appendix 4. Descriptive characteristics for each included systematic review 
 
- * don't have data on other searches, depression definition, conclusions, or references per review data
+Create data frame with info for appendix 4 - descriptive characteristics for each included systematic review:
 
 ```{r per-review-descriptives}
 #select relevant appendix 4 info
@@ -2069,292 +2096,47 @@ a4_info <- td_review %>%
   mutate(across(everything(), ~ifelse(.x == -999, "Not reported", .x)),
          n_included = as.character(n_included),
          n_eligible = as.character(n_eligible)) %>% 
-  select(review_author_year, review_eligibility_criteria, databases_searched, 
+  select(review_author_year, starts_with("review_eligibility"), databases_searched, 
          search_date, n_included, n_eligible, prisma_flow_diagram, review_registration, review_availability_statement) %>% 
   arrange(str_to_lower(review_author_year)) 
 
+#select citation info for eligible reviews
+review_citations <- td_reference %>% 
+  left_join(review_idbyname) %>% 
+  filter(review_author_year %in% inc_rev)
 
-#MISSING TITLE (needs formatted from reference), and ALL REFERENCES (waiting to see if papaja can help with formatting), 
+#create variable that combines all references for a review into one cell
+review_reports <- review_citations %>% 
+  group_by(review_author_year) %>% 
+  summarize(all_reports = paste(citation, collapse = " !!! ")) %>% 
+  ungroup() %>% 
+  mutate(all_reports = str_replace_all(all_reports, "!!! ", "<br><br>")) 
 
-#merge with lists of included and eligible studies
-#a4 <- left_join(a4_info, t1_stud_cols) #taking out list of studies
+#extract titles from .bib
+EXTRACT FROM .BIB (LINE 3418 IN REVISIONS) - EXTRACT TITLE, MERGE ALL TOGETHER, CREATE FULL TABLE
 
+#merge titles with citation info and rest of a4 info
 ```
 
-```{r a4-maptable-TEST, results ='asis'}
-#attempt to replicate multiple tables
-##split data frame into list of data frames
+Create one long data frame that has all information to present in appendix 4 for each review:
+
+```{r a4-mapdf}
+#split data frame into list of data frames
 a4_dflist <- map(1:nrow(a4_info), ~a4_info[.x, ])
 
-##transpose each data frame in the list
-# a4_dflist_t <- map(a4_dflist, ~t(.))
-
-##create gt table for each data frame in list
-# a4_gtlist <- map(a4_dflist, ~ gt(.) %>% 
-#                    tab_header(title = " "))
-# 
-# ##extract raw HTML for each gt table and concatenate into one string
-# html_code <- a4_gtlist %>% 
-#   map(as_raw_html) %>% 
-#   reduce(paste)
-# 
-# ##write HTML to a file
-# writeLines(html_code, "test_a4.html")
-# 
-# print(html_code)
-
-#TRY AGAIN - transfer to long format
-
-##transfer to long format
+#transfer to long format
 df_list_long <- map(a4_dflist, ~ .x %>% 
                       pivot_longer(cols = everything(), 
                                    names_to = "variable", 
                                    values_to = "value") %>% 
                       mutate(variable = case_when(variable == "review_author_year" ~ "Review",
-                                                  variable == "review_eligibility_criteria" ~ "Eligibility Criteria",
-                                                  variable == "databases_searched" ~ "Databases Searched",
-                                                  variable == "search_date" ~ "Search Date",
-                                                  variable == "prisma_flow_diagram" ~ "Prisma Diagram", 
-                                                  variable == "review_registration" ~ "Registration",
-                                                  variable == "review_availability_statement" ~ "Data Availability Statement",
-                                                  variable == "n_eligible" ~ "Eligible Studies",
-                                                  variable == "n_included" ~ "Included Studies",
-                                                  TRUE ~ variable)) 
-                    )
-  
-##create gt table for each data frame in list
-a4long_gtlist <- map(df_list_long, ~ gt(.) %>% 
-                   tab_header(title = " "))
-
-##extract raw HTML for each gt table and concatenate into one string
-html_code2 <- a4long_gtlist %>% 
-  map(as_raw_html) %>% 
-  reduce(paste)
-##write HTML to a file
-writeLines(html_code2, "test_a4long.html")
-##print in document
-htmltools::HTML(html_code2)
-
-
-
-#TRY AGAIN (word table with page breaks)
-#combine into one single dataframe
-combined_a4 <- bind_rows(df_list_long, .id = "source") %>% 
-  mutate(source = as.numeric(source)) #%>% 
-  #group_by(source)
-
-#create full gt table
-gt_fulltable <- combined_a4 %>% 
-  gt(rowname_col = "variable", groupname_col = "source") 
-
-gt_preview(gt_fulltable)
-#gtsave(gt_fulltable, file = "a4_long.docx")
-##^^ Still no page breaks, but can do in word. 
-
-#options(gt.row_group.sep = "\n")
-# testbreaks <- combined_a4 %>% 
-#   gt(id = "one",
-#     groupname_col = c("source"), 
-#     rownames_to_stub = FALSE, 
-#     row_group.sep = getOption("gt.row_group.sep", "\n")
-# 
-#   ) %>%
-# 
-#   opt_css(
-#     css = "
-# 
-#     #one .gt_group_heading {
-# 
-#     white-space:pre-wrap;
-#     word-wrap:break-word;
-# 
-# 
-#     }
-# 
-#     "
-#   )
-# gt_preview(testbreaks)
-# gtsave(testbreaks, file = "a4_breaks.docx")
-  
-#TRYING
-# gt_table_test <- map(a4_dflist, function(x) {
-#   gt(t(as.data.frame(x)))
-# })
-
-# tgt_test <- function(df) {
-#   df %>% 
-#     gt() %>% 
-#     tab_transpose()
-# }
-# 
-# ####generate list of transposed gt tables
-# gt_list_test <- map(a4_dflist, tgt_test)
-
-#test_gtlist <- map(a4_dflist, ~ gt(t(.), rownames_to_stub = FALSE))
-
-
-#TRY AGAIN
-# Create a new Word document
-# doc <- read_docx()
-# 
-# walk(a4long_gtlist, function(x) {
-#   add_flextable(doc, x)
-#   add_page_break(doc)
-# })
-# gtsave(doc, "all_a4tables.docx")
-
-
-#TRY AGAIN
-# Create a tab_booktabs object from the gt_list
-#long_table <- a4long_gtlist %>%
- # tab_booktabs()
-
-# long_table <- bind_rows(a4long_gtlist)
-# wide_table <- bind_cols(a4long_gtlist)
-
-# # Create a new Word document
-# doc <- read_docx()
-# 
-# # Insert the long_table into the document
-# doc <- body_add_flextable(doc, long_table)
-# 
-# # Save the Word document
-# print(doc, target = "long_table.docx")
-# 
-# # Save the Excel file
-# write_xlsx(long_table, "long_table.xlsx")
-# 
-# 
-# #TRY AGAIN
-# # Create a temporary HTML file
-# html_file <- tempfile(fileext = ".html")
-# cat(html_code2, file = html_file)
-# 
-# # Capture a screenshot of the HTML table
-# img_file <- tempfile(fileext = ".png")
-# webshot(html_file, file = img_file)
-# 
-# # Load the image into R
-# img <- magick::image_read(img_file)
-# 
-# # Create a new Word document
-# doc <- read_docx()
-# 
-# # Insert the image into the document as a paragraph
-# doc <- body_add_par(doc, "", style = "Normal")
-# doc <- body_add_image(doc, img)
-# 
-# # Save the document
-# print(doc, target = "table.docx")
-# 
-# # Clean up the temporary files
-# file.remove(html_file, img_file)
-# 
-# #ANOTHER TIME
-# #attempt to save as word
-# library(officer)
-# doc <- read_docx()
-# doc <- body_add_par(doc, html_code2)
-# print(doc, target = "a4.docx")
-# 
-# 
-# 
-# # Add each table to the document
-# # for (i in seq_along(a4long_gtlist)) {
-# #   doc <- body_add(doc, paste0("<h2>", names(a4long_gtlist)[i], "</h2>"))
-# #   doc <- body_add(doc, as_pretty_html(a4long_gtlist[[i]]))
-# #   doc <- body_add(doc, "<br>")
-# # }
-# 
-# # Save the document
-# print(doc, target = "tables.docx")
-# 
-# 
-# 
-# 
-# # Convert the HTML code to a data frame
-# df <- htmlTable::htmlTableToDataFrame(html_code2)
-# 
-# # Create a new Word document
-# doc <- read_docx()
-# 
-# # Insert the data frame into the document as a table
-# doc <- body_add_table(doc, df)
-# 
-# # Save the document
-# print(doc, target = "table.docx")
-
-
-
-#TRYING BREAKS for html table = FINAL
-
-
-list_gt <- lapply(split(combined_a4, combined_a4$source), function(x) {
-  gt(x) %>% 
-    cols_hide("source") %>% 
-    cols_label(variable = "",
-               value = "") %>% 
-    tab_style(style = list(cell_text(weight = "bold")),
-            locations = cells_body(columns = "variable")) %>% 
-    tab_options(table.font.names = "Times New Roman")
-    
-    
-    #tab_header(title = paste("Review", unique(x$source)))
-})
-
-
-
-#HTML table
-html_code3 <- list_gt %>% 
-  map(as_raw_html) %>% 
-  reduce(paste)
-#print in document
-htmltools::HTML(html_code3)
-writeLines(html_code3, "test_breaks.html")
-
-# #trying breaks for word table
-# gt_break_table <- combined_a4 %>% 
-#   gt(rowname_col = "variable", groupname_col = "source") %>% 
-#   
-#   tab_options(split_table = ~ .x %>% tab_group(groupname_col = "source"))
-
-
-
-
-
-#TRY split
-split_a4 <- split(combined_a4, combined_a4$source)
-
-tables <- lapply(split_a4, function(x) {
-  gt(x) %>% 
-    tab_header(title = paste("Review", unique(x$source)))
-})
-
-tables
-#could print all individually in rmd
-
-#try stack
-# tablesstack <- tab_row_group(tables[[1]], tables[[2]])
-# 
-# combined_table <- tables[[1]]
-# for (i in 2:length(tables)) {
-#   combined_table <- tab_row_group(combined_table, tables[[i]])
-# }
-
-
-```
-
-```{r a4-tables}
-###################FINAL CODE FOR HTML TABLE
-##split data frame into list of data frames
-a4_dflist <- map(1:nrow(a4_info), ~a4_info[.x, ])
-##transfer to long format
-df_list_long <- map(a4_dflist, ~ .x %>% 
-                      pivot_longer(cols = everything(), 
-                                   names_to = "variable", 
-                                   values_to = "value") %>% 
-                      mutate(variable = case_when(variable == "review_author_year" ~ "Review",
-                                                  variable == "review_eligibility_criteria" ~ "Eligibility Criteria",
+                                                  variable == "review_eligibility_participants" ~ "Eligibility Criteria: Participants",
+                                                  variable == "review_eligibility_interventions" ~ "Eligibility Criteria: Interventions",
+                                                  variable == "review_eligibility_comparisons" ~ "Eligibility Criteria: Comparisons",
+                                                  variable == "review_eligibility_outcomes" ~ "Eligibility Criteria: Outcomes",
+                                                  variable == "review_eligibility_timing" ~ "Eligibility Criteria: Timing",
+                                                  variable == "review_eligibility_setting" ~ "Eligibility Criteria: Setting",
+                                                  variable == "review_eligibility_studies" ~ "Eligibility Criteria: Studies",
                                                   variable == "databases_searched" ~ "Databases Searched",
                                                   variable == "search_date" ~ "Search Date",
                                                   variable == "prisma_flow_diagram" ~ "Prisma Diagram", 
@@ -2363,14 +2145,17 @@ df_list_long <- map(a4_dflist, ~ .x %>%
                                                   variable == "n_eligible" ~ "Eligible Studies",
                                                   variable == "n_included" ~ "Included Studies",
                                                   TRUE ~ variable)))
-
-#combine into one single dataframe
+  
+#combine into one single data frame
 combined_a4 <- bind_rows(df_list_long, .id = "source") %>% 
   mutate(source = as.numeric(source))
 
-#TRYING BREAKS for html table = FINAL
+```
 
+Create list of tables for each review to present in appendix 4: 
 
+```{r a4-maptable, results ='asis'}
+#create gt table for each for each review
 list_gt <- lapply(split(combined_a4, combined_a4$source), function(x) {
   gt(x) %>% 
     cols_hide("source") %>% 
@@ -2378,20 +2163,25 @@ list_gt <- lapply(split(combined_a4, combined_a4$source), function(x) {
                value = "") %>% 
     tab_style(style = list(cell_text(weight = "bold")),
             locations = cells_body(columns = "variable")) %>% 
-    tab_options(column_labels.border.top.color = "black",
-                table.font.names = "Times New Roman")
+    tab_options(table.font.names = "Times New Roman")
 })
 
-#view sample
-print(list_gt[1])
+list_gt[1]
 
-
-#HTML table
-html_code3 <- list_gt %>% 
+#extract HTML code of table
+html_code <- list_gt %>% 
   map(as_raw_html) %>% 
   reduce(paste)
+
 #print in document
-htmltools::HTML(html_code3)
-writeLines(html_code3, "test_breaks.html")
+htmltools::HTML(html_code)
+
+```
+
+Save appendix 4 to `FOLDER NAME` project folder: 
+
+```{r a4-save}
+#save as HMTL
+writeLines(html_code, "test_breaks.html")
 
 ```
