@@ -36,7 +36,8 @@ reference_level <- read_excel(search_path, sheet = "reference_level",
                                       guess_max = 123456) 
 
 #import Zotero reference information for eligible reviews
-review_bib <- bib2df(here("data", "included_reviews.bib"))
+review_bib <- bib2df(here("data", "included_reviews.bib")) %>% 
+  janitor::clean_names()
 
 ```
 
@@ -2086,7 +2087,7 @@ Save appendix 3 to `FOLDER NAME` project folder:
 
 Create data frame with info for appendix 4 - descriptive characteristics for each included systematic review:
 
-```{r per-review-descriptives}
+```{r per-review-descriptives, warning = FALSE}
 #select relevant appendix 4 info
 a4_info <- td_review %>% 
   left_join(numelig_perreview) %>% 
@@ -2110,19 +2111,44 @@ review_reports <- review_citations %>%
   group_by(review_author_year) %>% 
   summarize(all_reports = paste(citation, collapse = " !!! ")) %>% 
   ungroup() %>% 
-  mutate(all_reports = str_replace_all(all_reports, "!!! ", "<br><br>")) 
+  mutate(all_reports = str_replace_all(all_reports, "!!! ", "<br><br>"),
+         merge_author = stri_trans_general(review_author_year, "Latin-ASCII"),
+         merge_author = str_to_lower(merge_author)) %>% 
+  select(review_author_year, merge_author, all_reports)
 
 #extract titles from .bib
-EXTRACT FROM .BIB (LINE 3418 IN REVISIONS) - EXTRACT TITLE, MERGE ALL TOGETHER, CREATE FULL TABLE
+rev_titles <- review_bib %>% 
+    rowwise() %>% 
+  mutate(author_unlist = paste(lapply(author, paste, collapse = ","), collapse = ", "),
+         author = str_extract(author_unlist, "^[^,]+"),
+         author_year = paste(author, year), 
+         title = str_replace_all(title, "[{}]", ""),
+         title = str_remove(title, "\\.$"),
+         merge_author = stri_trans_general(author_year, "Latin-ASCII"),
+         merge_author = str_to_lower(merge_author)) %>% 
+  select(author_year, merge_author, title) %>% 
+  arrange(str_to_lower(author_year))
 
-#merge titles with citation info and rest of a4 info
+#merge titles and citations with other a4 info and format eligibility cells
+a4 <- a4_info %>% 
+  mutate(merge_author = stri_trans_general(review_author_year, "Latin-ASCII"),
+         merge_author = str_to_lower(merge_author)) %>% 
+  left_join(rev_titles, by = "merge_author") %>% 
+  left_join(review_reports, by = "merge_author") %>% 
+  mutate_at(vars(starts_with("review_eligibility")), list(~ str_replace_all(., "\\s-\\s(?=[A-Z])", "<br> - "))) %>% 
+  #mutate_at(vars(starts_with("review_eligibility")), ~ str_replace(., "^<br>", "")) %>% 
+  mutate_at(vars(starts_with("review_eligibility")), ~ str_replace_all(., "- ([A-Z])", " <li>\\1")) %>% 
+  mutate_at(vars(starts_with("review_eligibility")), ~ paste0("<ul>", ., "</ul>")) %>% 
+  rename(review_author_year = review_author_year.x) %>% 
+  select(review_author_year, title, review_eligibility_participants:review_availability_statement, all_reports)
+  
 ```
 
 Create one long data frame that has all information to present in appendix 4 for each review:
 
 ```{r a4-mapdf}
 #split data frame into list of data frames
-a4_dflist <- map(1:nrow(a4_info), ~a4_info[.x, ])
+a4_dflist <- map(1:nrow(a4), ~a4[.x, ])
 
 #transfer to long format
 df_list_long <- map(a4_dflist, ~ .x %>% 
@@ -2130,13 +2156,14 @@ df_list_long <- map(a4_dflist, ~ .x %>%
                                    names_to = "variable", 
                                    values_to = "value") %>% 
                       mutate(variable = case_when(variable == "review_author_year" ~ "Review",
-                                                  variable == "review_eligibility_participants" ~ "Eligibility Criteria: Participants",
-                                                  variable == "review_eligibility_interventions" ~ "Eligibility Criteria: Interventions",
-                                                  variable == "review_eligibility_comparisons" ~ "Eligibility Criteria: Comparisons",
-                                                  variable == "review_eligibility_outcomes" ~ "Eligibility Criteria: Outcomes",
-                                                  variable == "review_eligibility_timing" ~ "Eligibility Criteria: Timing",
-                                                  variable == "review_eligibility_setting" ~ "Eligibility Criteria: Setting",
-                                                  variable == "review_eligibility_studies" ~ "Eligibility Criteria: Studies",
+                                                  variable == "title" ~ "Title",
+                                                  variable == "review_eligibility_participants" ~ "Participants",
+                                                  variable == "review_eligibility_interventions" ~ "Interventions",
+                                                  variable == "review_eligibility_comparisons" ~ "Comparisons",
+                                                  variable == "review_eligibility_outcomes" ~ "Outcomes",
+                                                  variable == "review_eligibility_timing" ~ "Timing",
+                                                  variable == "review_eligibility_setting" ~ "Setting",
+                                                  variable == "review_eligibility_studies" ~ "Studies",
                                                   variable == "databases_searched" ~ "Databases Searched",
                                                   variable == "search_date" ~ "Search Date",
                                                   variable == "prisma_flow_diagram" ~ "Prisma Diagram", 
@@ -2144,6 +2171,7 @@ df_list_long <- map(a4_dflist, ~ .x %>%
                                                   variable == "review_availability_statement" ~ "Data Availability Statement",
                                                   variable == "n_eligible" ~ "Eligible Studies",
                                                   variable == "n_included" ~ "Included Studies",
+                                                  variable == "all_reports" ~ "References",
                                                   TRUE ~ variable)))
   
 #combine into one single data frame
@@ -2163,7 +2191,16 @@ list_gt <- lapply(split(combined_a4, combined_a4$source), function(x) {
                value = "") %>% 
     tab_style(style = list(cell_text(weight = "bold")),
             locations = cells_body(columns = "variable")) %>% 
-    tab_options(table.font.names = "Times New Roman")
+    #tab_row_group(rows = 10:17, label = "", id = "group3") %>% 
+    tab_row_group(rows = 3:9, label = "Eligibility Criteria:") %>% 
+    tab_row_group(rows = 1:2, label = "", id = "group1") %>% 
+    tab_options(#row_group.border.bottom.width = 0,
+                #row_group.border.bottom.color = "white",
+                table.font.names = "Times New Roman") %>% 
+    tab_style(style = cell_text(weight = "bold"), locations = cells_row_groups()) %>% 
+    tab_style(style = cell_text(align = "right"), locations = cells_body(columns = "variable", rows = 3:9)) %>%
+    #tab_style(style = cell_borders(sides = "top", color = "white", weight = px(0)), locations = cells_body(rows = 10)) %>% 
+    fmt_markdown()
 })
 
 list_gt[1]
@@ -2182,6 +2219,6 @@ Save appendix 4 to `FOLDER NAME` project folder:
 
 ```{r a4-save}
 #save as HMTL
-writeLines(html_code, "test_breaks.html")
+writeLines(html_code, here("report", "appendices", "appendix_4.html"))
 
 ```
