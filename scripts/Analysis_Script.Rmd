@@ -1534,20 +1534,20 @@ print(table1_formatted)
 
 ```
 
-Save table 1 to `FOLDER NAME` project folder: (**specify final paths**)
+Save table 1 to `report/tables`` project folder: 
 
 ```{r t1-save}
 #save as word doc
 #gtsave(table1_formatted, filename = "table1_word.docx", device = "word", landscape = TRUE) #landscape doesn't work
 
 #save as pdf
-gtsave(table1_formatted, filename = "table1.pdf") 
+#gtsave(table1_formatted, filename = "table1.pdf") 
 
 #save as html with larger column widths
 table1_html <- table1_formatted %>% 
   cols_width(review_author_year ~ px(175), databases_searched ~ px(700), search_date_format ~ px(150), starts_with("n") ~ px(75))
 
-gtsave(table1_html, filename = "table1_html.html")
+gtsave(table1_html, filename = "table_1.html", path = here("report", "tables"))
 
 ```
 
@@ -1609,9 +1609,14 @@ print(t2_formatted)
 
 ```
 
-Save table 2 to `FOLDER NAME` project folder: 
+Save table 2 to `report/tables`` project folder: 
 
 ```{r save-t2}
+#save as HTML
+gtsave(t2_formatted, filename = "table_2.html", path = here("report", "tables"))
+
+#save as word doc
+#gtsave(t2_formatted, filename = "table2_word.docx")
 
 ```
 
@@ -1767,13 +1772,18 @@ finalformat <- rbind(ourformat, newnodes)
 
 #create PRISMA diagram 
 f1 <- getPrisma(studyStatus, finalformat)
-grViz(f1)
+f1_viz <- grViz(f1)
 
+f1_viz
 ```
 
-Save figure 1 to `FOLDER NAME` project folder: 
+Save figure 1 to `report/figures` project folder: 
 
 ```{r save-f1}
+#save figure 1
+htmlwidgets::saveWidget(f1_viz, "temp.html")
+webshot("temp.html", here("report", "figures", "figure1_prisma.png"))
+file.remove("temp.html")
 
 ```
 
@@ -1790,7 +1800,7 @@ cca_inc <- td_cm %>%
   rename(` Current Review` = `Current Review`)
 
 #create pairwise heatmap with CCA(%), including our review
-cca_heatmap(cca_inc, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 3) +
+f2 <- cca_heatmap(cca_inc, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 2.5) +
   ggplot2::theme(
       plot.caption = ggplot2::element_text(size = 16, margin=ggplot2::margin(30,0,0,0)),
       legend.title = ggplot2::element_text(size = 16, face = "bold", vjust=4),
@@ -1806,12 +1816,19 @@ cca_heatmap(cca_inc, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 3) +
       panel.border=ggplot2::element_blank(),
       panel.grid.major.x=ggplot2::element_line(colour = "grey80", linetype = "dashed"))
 
+f2
+
 ```
 
-Save figure 2 to `FOLDER NAME` project folder: 
+Save figure 2 to `report/figures` project folder: 
+*NEED TO CHANGE RATIO/ZOOM TO SAVE AS IMAGE FILE*   
 
 ```{r save-f2}
+ggsave(here("report", "figures", "f2_heatmap.png"), plot = f2, dpi = 1000)
 
+# png(here("report", "figures", "f2_heatmap2.png"))
+# f2
+# dev.off()
 ```
 
 ### Figure 3. Overlap of eligible studies across systematic reviews
@@ -1826,7 +1843,7 @@ cca_elig <- td_cm %>%
   rename(` Current Review` = `Current Review`)
 
 #create pairwise heatmap with CCA(%)
-cca_heatmap(cca_elig, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 3.2) +
+f3 <- cca_heatmap(cca_elig, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 2.7) +
   ggplot2::theme(
       plot.caption = ggplot2::element_text(size = 16, margin=ggplot2::margin(30,0,0,0)),
       legend.title = ggplot2::element_text(size = 16, face = "bold", vjust=4),
@@ -1842,9 +1859,11 @@ cca_heatmap(cca_elig, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 3.2) +
       panel.border = ggplot2::element_blank(),
       panel.grid.major.x = ggplot2::element_line(colour = "grey80", linetype = "dashed"))
 
+print(f3)
+
 ```
 
-Save figure 3 to `FOLDER NAME` project folder: 
+Save figure 3 to `report/figures` project folder: 
 
 ```{r save-f3}
 
@@ -1924,17 +1943,17 @@ print(a1_formatted)
 
 ```
 
-Save appendix 1 to `FOLDER NAME` project folder: 
+Save appendix 1 to `report/appendices`` project folder: 
 
 ```{r save-a1}
 #save as word
 #gtsave(a1_formatted, filename = "appendix1.docx")
 
 #save as html
-gtsave(a1_formatted, filename = "appendix1_html.html")
+gtsave(a1_formatted, filename = "appendix_1.html", path = here("report", "appendices"))
 
-#save as html
-gtsave(a1_formatted, filename = "appendix1_pdf.pdf")
+#save as pdf
+#gtsave(a1_formatted, filename = "appendix1_pdf.pdf")
 ```
 
 ### Appendix 2. List of excluded primary studies
@@ -1999,17 +2018,17 @@ print(a2_formatted)
 
 ```
 
-Save appendix 2 to `FOLDER NAME` project folder: 
+Save appendix 2 to `report/appendices`` project folder: 
 
 ```{r a2-save}
 #save as word
 #gtsave(a2_formatted, filename = "appendix2.docx")
 
 #save as html
-gtsave(a2_formatted, filename = "appendix2_html.html")
+gtsave(a2_formatted, filename = "appendix_2.html", path = here("report", "appendices"))
 
-#save as html
-gtsave(a2_formatted, filename = "appendix2_pdf.pdf")
+#save as pdf
+#gtsave(a2_formatted, filename = "appendix2_pdf.pdf")
 ```
 
 ### Appendix 3. Primary studies awaiting classification 
@@ -2036,7 +2055,7 @@ a3 <- a3_info %>%
   #                           str_detect(rationale, "No document") ~ "Unpublished document",
   #                           str_detect(rationale, "Not in English") ~ "No document in English",
   #                           TRUE ~ rationale)) %>% 
-  select(study, reason, citation)
+  select(study, rationale, citation)
 
 ```
 
@@ -2047,7 +2066,7 @@ Create table for appendix 3 and format:
 a3_formatted <- a3 %>% 
   gt()  %>% 
   cols_label(study = "Study", 
-             reason = "Reason",
+             rationale = "Reason",
              citation = "Reference") %>% 
   tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1))),
             locations = cells_body(columns = everything())) %>% 
@@ -2068,17 +2087,17 @@ print(a3_formatted)
 
 ```
 
-Save appendix 3 to `FOLDER NAME` project folder: 
+Save appendix 3 to `report/appendices`` project folder: 
 
 ```{r a3-save}
 # #save as word
-# gtsave(a2_formatted, filename = "appendix2.docx")
-# 
+# gtsave(a3_formatted, filename = "appendix3.docx")
+
+#save as html
+gtsave(a3_formatted, filename = "appendix_3.html", path = here("report", "appendices"))
+
 # #save as html
-# gtsave(a2_formatted, filename = "appendix2_html.html")
-# 
-# #save as html
-# gtsave(a2_formatted, filename = "appendix2_pdf.pdf")
+# gtsave(a3_formatted, filename = "appendix3_pdf.pdf")
 ```
 
 **ABOVE ONE AND REST OF BELOW PRODUCES TABLE WITH INCORRECTLY FORMATTED REFERENCE - WAITING TO SEE IF PAPAJA PACKAGE AND .BIB WILL HELP WITH THIS FOR EXACT REPLICATION**
@@ -2215,7 +2234,7 @@ htmltools::HTML(html_code)
 
 ```
 
-Save appendix 4 to `FOLDER NAME` project folder: 
+Save appendix 4 to `report/appendices`` project folder: 
 
 ```{r a4-save}
 #save as HMTL
