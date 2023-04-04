@@ -80,7 +80,7 @@ review_level <- read_excel(rd_path, sheet = "review_level")
 review_amstar <- read_excel(rd_path, sheet = "amstar")
 
 #import review level risk of bias data
-review_robis <- read_excel(rd_path, sheet = "robis") 
+#review_robis <- read_excel(rd_path, sheet = "robis") 
 
 ```
 
@@ -94,19 +94,19 @@ Import reconciled, primary study level data in `Depression_Overview_Study_Data.x
 
 ```{r import-study}
 #set path to study-level data
-sd_path <- here("data", "Depression_Overview_Study_Data")
+sd_path <- here("data", "Depression_Overview_Primary_Study_Data.xlsx")
 
 #import primary study level descriptive data
 study_level <- read_excel(sd_path, sheet = "study_level")
 
-#import study level risk of bias data for individual RCTs
-study_irob <- read_excel(sd_path, sheet = "iROB") 
-
-#import study level risk of bias data for cluster RCTs
-study_crob <- read_excel(sd_path, sheet = "cROB") 
-
-#import study level risk of bias data for non-randomized trials
-study_robins <- read_excel(sd_path, sheet = "ROBINS-I") 
+# #import study level risk of bias data for individual RCTs
+# study_irob <- read_excel(sd_path, sheet = "iROB") 
+# 
+# #import study level risk of bias data for cluster RCTs
+# study_crob <- read_excel(sd_path, sheet = "cROB") 
+# 
+# #import study level risk of bias data for non-randomized trials
+# study_robins <- read_excel(sd_path, sheet = "ROBINS-I") 
 
 #import group level descriptive data
 group_level <- read_excel(sd_path, sheet = "group_level")
@@ -124,7 +124,7 @@ Import cleaned, meta-analysis data in `Depression_Overview_MetaAnalysis_Data.xls
 
 ```{r import-ma}
 #set path to effect size data for meta-analyses
-ma_path <- here("data", "Depression_Overview_Meta_Analysis.xlsx")
+ma_path <- here("data", "Depression_Overview_Meta_Analysis_Data.xlsx")
 
 #import effect size data for depression diagnosis
 depression_diagnosis <- read_excel(ma_path, sheet = "Depression Diagnosis")
@@ -134,6 +134,27 @@ depression_symptoms <- read_excel(ma_path, sheet = "Depression Symptoms")
 
 #import effect size data for anxiety
 anxiety_symptoms <- read_excel(ma_path, sheet = "Anxiety")
+
+#import effect size data for subsyndromal depression
+subsyndromal_depression <- read_excel(ma_path, sheet = "Subsyndromal Depression")
+
+#import effect size data for educational achievement
+edu_achievement <- read_excel(ma_path, sheet = "Educational Achievement")
+
+#import effect size data for self-harm
+self_harm <- read_excel(ma_path, sheet = "Self Harm")
+
+#import effect size data for stress
+stress <- read_excel(ma_path, sheet = "Stress")
+
+#import effect size data for substance use
+substance_use <- read_excel(ma_path, sheet = "Substance Use")
+
+#import effect size data for suicidal ideation
+suicidal_ideation <- read_excel(ma_path, sheet = "Suicidal Ideation")
+
+#import effect size data for well-being
+well_being <- read_excel(ma_path, sheet = "Well-being")
 ```
 
 ## Pre-processing
@@ -198,20 +219,19 @@ td_amstar <- review_amstar %>%
   arrange(review_author_year) 
 
 #merge review names into review_robis data
-td_robis <- review_robis %>% 
-  left_join(review_idbyname) %>% 
-  select(review_author_year, everything()) %>% 
-  arrange(review_author_year) 
+# td_robis <- review_robis %>% 
+#   left_join(review_idbyname) %>% 
+#   select(review_author_year, everything()) %>% 
+#   arrange(review_author_year) 
 
 ```
 
 Primary Study Eligibility Level: 
-* *REMOVE LEADING NUMBERS?* - ps_elig_td <- ps_eligibility %>%
 * pull list of primary studies that are included in our meta-analyses (eligible studies)
 * factor and rename the study name variable in the `citation_matrix` to match all other files
 
 ```{r tidy-pseligibility}
-#create object to match revision code (no longer rename columns) - add tidying here e.g., remove leading numbers?
+#create object to match revision code 
 ps_elig_td <- ps_eligibility
 
 #pull list of included studies
@@ -219,7 +239,7 @@ inc_ps <- ps_eligibility %>%
   filter(decision == "Include") %>% 
   pull(study) 
 
-#create object to match revision code (no longer rename columns) - add tidying here? 
+#create object to match revision code
 td_cm <- ps_cm
 
 ```
@@ -242,19 +262,19 @@ td_study <- study_level %>%
 study_idbyname <- td_study %>% 
   select(primary_study_id, study_author_year)
 
-#filter for studies with correct irob info
-irob_df <- study_irob %>% 
-  filter(primary_study_id != 1088) %>%  #remove study that should be cluster rob assessment
-  select(primary_study_id, ends_with("judgment"), iROB_overall_rating)
-
-#filter for studies with crob info
-crob_df <- study_crob %>% 
-  filter(primary_study_id != 1085) %>%  #remove study that should be robins-i assessment
-  select(primary_study_id, ends_with("judgment"), cROB_overall_rating)
-
-#select variables for robins-i info
-robins_df <- study_robins %>% 
-  select(primary_study_id, ends_with("judgment"), robins_overall_rating)
+# #filter for studies with correct irob info
+# irob_df <- study_irob %>% 
+#   filter(primary_study_id != 1088) %>%  #remove study that should be cluster rob assessment
+#   select(primary_study_id, ends_with("judgment"), iROB_overall_rating)
+# 
+# #filter for studies with crob info
+# crob_df <- study_crob %>% 
+#   filter(primary_study_id != 1085) %>%  #remove study that should be robins-i assessment
+#   select(primary_study_id, ends_with("judgment"), cROB_overall_rating)
+# 
+# #select variables for robins-i info
+# robins_df <- study_robins %>% 
+#   select(primary_study_id, ends_with("judgment"), robins_overall_rating)
   
 ```
 
@@ -267,33 +287,81 @@ Group Level:
 td_group <- group_level %>% 
   mutate(intervention_intensity = case_when(intervention_intensity == "20 to 30" ~ "50",
                                             intervention_intensity == "20 to 40" ~ "30",
-                                            intervention_intensity == "2040" ~ "30",
-                                            intervention_intensity == "2060" ~ "40",
-                                            intervention_intensity == "3060" ~ "45",
-                                            intervention_intensity == "3090" ~ "60",
+                                            intervention_intensity == "20 to 40" ~ "30",
+                                            intervention_intensity == "20 to 60" ~ "40",
+                                            intervention_intensity == "30 to 60" ~ "45",
+                                            intervention_intensity == "30 to 90" ~ "60",
                                             intervention_intensity == "35 to 60" ~ "47.5",
-                                            intervention_intensity == "3540" ~ "37.5",
+                                            intervention_intensity == "35 to 40" ~ "37.5",
                                             intervention_intensity == "40 to 60" ~ "50",
-                                            intervention_intensity == "4045" ~ "42.5",
-                                            intervention_intensity == "4050" ~ "45",
+                                            intervention_intensity == "40 to 45" ~ "42.5",
+                                            intervention_intensity == "40 to 50" ~ "45",
                                             intervention_intensity == "45 to 50" ~ "47.5",
-                                            intervention_intensity == "4550" ~ "47.5",
-                                            intervention_intensity == "4560" ~ "52.5",
-                                            intervention_intensity == "4590" ~ "67.5",
-                                            intervention_intensity == "5060" ~ "55",
-                                            TRUE ~ intervention_intensity)) %>%  
-  mutate(intervention_intensity = as.numeric(intervention_intensity)) %>% 
+                                            intervention_intensity == "45 to 50" ~ "47.5",
+                                            intervention_intensity == "45 to 60" ~ "52.5",
+                                            intervention_intensity == "45 to 90" ~ "67.5",
+                                            intervention_intensity == "50 to 60" ~ "55",
+                                            TRUE ~ intervention_intensity)) %>%
+  mutate(intervention_intensity = as.numeric(intervention_intensity),
+         intervention_frequency = ifelse(intervention_frequency == "6. Cannot Tell", "-999", intervention_frequency)) %>% 
   mutate_if(is.numeric, ~ if_else(. == -999, NA_real_, .)) 
 
 ```
 
 Outcome Level:
 * transform study ID variable to numeric
+* create cleaned outcome measure variable that collapses same measures that have different versions
+* create function that will clean outcome_measures across different data sets (e.g., meta-analysis files)
 
 ```{r tidy-outcome}
-#make study ID numeric
+#make study ID numeric and create variable that aggregates outcome measures
 td_outcome <- outcome_level %>% 
-  mutate(primary_study_id = as.numeric(primary_study_id))
+  mutate(primary_study_id = as.numeric(primary_study_id)) %>% 
+  mutate(outcome_measure_lc = str_to_lower(outcome_measure),
+         agg_outcome_meas = case_when(str_detect(outcome_measure_lc, "beck depression inventory") ~ 
+                                        "Beck Depression Inventory",
+                                      str_detect(outcome_measure_lc, "center for epidemiologic studies depression scale") ~ 
+                                        "Center for Epidemiologic Studies Depression Scale",
+                                      str_detect(outcome_measure_lc, "children") & str_detect(outcome_measure_lc, "depression inventory") ~ 
+                                        "Children’s Depression Inventory",
+                                      str_detect(outcome_measure_lc, "revised children’s manifest anxiety scale") ~ 
+                                        "Revised Children’s Manifest Anxiety Scale",
+                                      str_detect(outcome_measure_lc, "mood and feelings questionnaire") ~ 
+                                        "Mood and Feelings Questionnaire",
+                                      str_detect(outcome_measure_lc, "depression anxiety stress scale") ~ 
+                                        "Depression Anxiety Stress Scale",
+                                      str_detect(outcome_measure_lc, "reynolds adolescent depression scale") ~ 
+                                        "Reynolds Adolescent Depression Scale",
+                                      str_detect(outcome_measure_lc, "spence") & str_detect(outcome_measure_lc, "anxiety scale") ~ 
+                                      "Spence Children's Anxiety Scale",
+                                      str_detect(outcome_measure_lc, "structured clinical interview") ~ "Structured Clinical Interview",
+                                      TRUE ~ outcome_measure))
+
+#create function to clean outcome_measure variable
+mutate_outcome_measure <- function(df){
+  df %>% 
+  mutate(outcome_measure_lc = str_to_lower(outcome_measure),
+         agg_outcome_meas = case_when(str_detect(outcome_measure_lc, "beck depression inventory") ~ 
+                                        "Beck Depression Inventory",
+                                      str_detect(outcome_measure_lc, "center for epidemiologic studies depression scale") ~ 
+                                        "Center for Epidemiologic Studies Depression Scale",
+                                      str_detect(outcome_measure_lc, "children") & str_detect(outcome_measure_lc, "depression inventory") ~ 
+                                        "Children’s Depression Inventory",
+                                      str_detect(outcome_measure_lc, "revised children’s manifest anxiety scale") ~ 
+                                        "Revised Children’s Manifest Anxiety Scale",
+                                      str_detect(outcome_measure_lc, "mood and feelings questionnaire") ~ 
+                                        "Mood and Feelings Questionnaire",
+                                      str_detect(outcome_measure_lc, "depression anxiety stress scale") ~ 
+                                        "Depression Anxiety Stress Scale",
+                                      str_detect(outcome_measure_lc, "reynolds adolescent depression scale") ~ 
+                                        "Reynolds Adolescent Depression Scale",
+                                      str_detect(outcome_measure_lc, "spence") & str_detect(outcome_measure_lc, "anxiety scale") ~ 
+                                      "Spence Children's Anxiety Scale",
+                                      str_detect(outcome_measure_lc, "structured clinical interview") ~ "Structured Clinical Interview",
+                                      str_detect(outcome_measure_lc, "diagnostic interview for children and adolescents") ~ "Diagnostic Interview for Children and Adolescents",
+                                      TRUE ~ outcome_measure))  
+}
+
 
 ```
 
@@ -845,8 +913,8 @@ Range and median of number of students across all primary studies:
 
 ```{r participants-n2}
 #median and range of students
-range(td_study$number_participants) 
 median(td_study$number_participants) 
+range(td_study$number_participants) 
 
 ```
 
@@ -879,8 +947,8 @@ Range and median of number of schools included in primary studies:
 
 ```{r participants-schools2}
 #median and range of schools
-range(td_study$number_schools, na.rm = TRUE) 
 median(td_study$number_schools, na.rm = TRUE)
+range(td_study$number_schools, na.rm = TRUE) 
 
 ```
 
@@ -974,12 +1042,12 @@ sum(td_study$country == "United States")
 Of studies conducted in the U.S., range and median of percentage of white students:
 
 ```{r participants-US-white}
-#create subset with only studies conduted in U.S.
+#create subset with only studies conducted in U.S.
 US_study <- td_study %>% 
   filter(country == "United States")
 
 #of US studies, range and median of % white
-range(US_study$percent_white, na.rm = TRUE) 
+range(US_study$percent_white * 100, na.rm = TRUE) 
 median(US_study$percent_white, na.rm = TRUE) * 100 
 
 ```
@@ -1450,6 +1518,725 @@ count_robinsratings
 
 ## Meta-Analysis
 
+### KQ1: What is the effect of school based depression prevention interventions on depression diagnosis? 
+
+Number and percentage of studies reporting effect size data on depression diagnosis: 
+
+```{r k1-descriptives-es}
+#number/% of studies with effect size data
+length(unique(depression_diagnosis$study))
+length(unique(depression_diagnosis$study)) / sum(ps_elig_td$decision == "Include") * 100 
+
+```
+
+Number and percentage of participants across studies reporting effect size data:
+
+```{r k1-descriptives-n}
+#get list of studies that included depression diagnosis effect size
+depdiag_studs <- depression_diagnosis %>% 
+  distinct(study) %>% 
+  pull(study)
+
+#filter study level data for only those that have effect sizes
+sl_depdiag <- td_study %>% 
+  filter(study_author_year %in% depdiag_studs)
+
+#sum and percent of participants
+sum(sl_depdiag$number_participants) 
+sum(sl_depdiag$number_participants) / sum(td_study$number_participants) * 100 
+
+```
+
+Most common measures for depression diagnosis: 
+
+```{r k1-descriptives-measures}
+#calculate most common measures
+depdiag_measure <- depression_diagnosis %>% 
+  mutate_outcome_measure() %>% 
+  distinct(study, agg_outcome_meas, .keep_all = TRUE) %>% 
+  group_by(agg_outcome_meas) %>% 
+  summarize(n = n(),
+            percent = n/length(unique(depression_diagnosis$study))*100) %>% 
+  arrange(desc(n))
+depdiag_measure
+
+```
+
+Range and median for length of follow-up for outcome measurement: 
+
+```{r k1-descriptives-followup}
+#range/median of length of follow up
+range(depression_diagnosis$outcome_timepoint) 
+median(depression_diagnosis$outcome_timepoint) 
+
+```
+
+Range and median for number of effect estimates reported in studies: 
+
+```{r k1-descriptives-studyeffect}
+#calculate number of effect estimates per study
+depdiag_effects <- depression_diagnosis %>% 
+  group_by(study) %>% 
+  summarize(n = n()) %>% 
+  arrange(desc(n)) %>% 
+  ungroup()
+
+#range/median of number of effects per study
+range(depdiag_effects$n) #1-6
+median(depdiag_effects$n) #2
+
+```
+
+Total number of effect sizes reported for depression diagnosis
+
+```{r k1-descriptives-neffect}
+#total effect sizes
+nrow(depression_diagnosis) #33
+
+```
+
+Calculate effect sizes and conduct random effects robust variance meta-analysis:
+
+```{r MA-dd}
+#calculate effect size
+dd_escalc <- escalc(measure="RR", ai = intervention_harmful_ess, bi = intervention_beneficial_ess, ci = comparison_harmful_ess, di = comparison_beneficial_ess, data = depression_diagnosis)
+
+#conduct RVE meta-analysis
+dd_intercept <- robu(formula = yi ~ 1, data = dd_escalc, studynum = study, var.eff.size = vi, rho = .8, small = TRUE)
+dd_intercept
+
+```
+
+Calculate risk ratio estimate from log results: 
+
+```{r MA-dd-RR}
+#exponentiate estimate to transform to risk ratio
+depdiag_RRestimate <- exp(dd_intercept$reg_table$b.r)
+depdiag_RRlowerci <- exp(dd_intercept$reg_table$CI.L)
+depdiag_RRupperci <- exp(dd_intercept$reg_table$CI.U)
+paste0("risk ratio = ", round(depdiag_RRestimate, 2), ", 95% CI [", round(depdiag_RRlowerci, 2), " to ", round(depdiag_RRupperci, 2), "]")
+
+```
+
+Calculate percentage decrease in risk of depression diagnosis:
+
+```{r MA-dd-percent}
+# RR <1, calculate decrease in risk
+percent_decrease <- (1-depdiag_RRestimate) * 100
+percent_decrease
+
+```
+
+Calculate prediction interval:
+
+```{r MA-dd-PI}
+#extract log model results
+depdiag_estimate <- dd_intercept$reg_table$b.r
+depdiag_tausq <- as.numeric(dd_intercept$mod_info$tau.sq)
+depdiag_se <- dd_intercept$reg_table$SE
+depdiag_k <- dd_intercept$N
+
+#determine critical t-value
+depdiag_criticalt <- qt(p = .05/2, df = depdiag_k - 2, lower.tail = FALSE)
+
+#calculate prediction interval and exponentiate
+depdiag_exp_pilower <- exp(depdiag_estimate - (depdiag_criticalt*sqrt(depdiag_tausq + (depdiag_se^2))))
+depdiag_exp_piupper <- exp(depdiag_estimate + (depdiag_criticalt*sqrt(depdiag_tausq + (depdiag_se^2))))
+paste0("95% PI [", round(depdiag_exp_pilower, 2), " to ", round(depdiag_exp_piupper, 2), "]")
+
+```
+
+Calculate cumulative distribution function for t-distribution:
+
+```{r MA-dd-CDF}
+#calculate t value for CDF calculation
+depdiag_t <- (0 - depdiag_estimate) / sqrt(depdiag_tausq + (depdiag_se^2))
+
+#calculate CDF
+dd_cdf_test <- pt(depdiag_t, depdiag_k - 1)
+dd_cdf_test * 100
+
+```
+
+### KQ2: What is the effect of school based depression prevention interventions on subsyndromal and depressive symptoms? 
+
+#### Subsyndromal Depression
+
+Number and percentage of studies reporting effect size data on subsyndromal depression:
+
+```{r subsyndromal-descriptives-es}
+#number/% of studies with effect sizes
+length(unique(subsyndromal_depression$study))
+length(unique(subsyndromal_depression$study)) / sum(ps_elig_td$decision == "Include") * 100 #
+
+```
+
+Number and percentage of participants across studies with effect size data: 
+
+```{r subsyndromal-descriptives-participants}
+#get list of studies that included subsyndromal depression effect size
+subsynd_studs <- subsyndromal_depression %>% 
+  distinct(study) %>% 
+  pull(study)
+
+#filter study level data for only those that have effect sizes
+sl_subsynd <- td_study %>% 
+  filter(study_author_year %in% subsynd_studs)
+
+#sum and percent
+sum(sl_subsynd$number_participants) 
+sum(sl_subsynd$number_participants) / sum(td_study$number_participants) * 100 
+
+```
+
+Most commonly used measures for subsyndromal depression:
+
+```{r subsyndromal-descriptives-measures}
+#most common measures
+subsynd_measure <- subsyndromal_depression %>% 
+  mutate_outcome_measure() %>% 
+  distinct(study, agg_outcome_meas, .keep_all = TRUE) %>% 
+  group_by(agg_outcome_meas) %>% 
+  summarize(n = n(),
+            percent = n/length(unique(subsyndromal_depression$study))*100) %>% 
+  arrange(desc(n))
+subsynd_measure
+
+```
+
+Range and median for length of follow up:
+
+```{r subsyndromal-descriptives-followup}
+#range/median of length of follow up
+range(subsyndromal_depression$outcome_timepoint) 
+median(subsyndromal_depression$outcome_timepoint) 
+
+```
+
+Range and median of number of effect estimates reported per study:
+
+```{r subsyndromal-descriptives-studyeffect}
+#calculate number of effect estimates per study
+subsynd_effects <- subsyndromal_depression %>% 
+  group_by(study) %>% 
+  summarize(n = n()) %>% 
+  arrange(desc(n)) %>% 
+  ungroup()
+
+#range/median of number of effects per study
+range(subsynd_effects$n) 
+median(subsynd_effects$n) 
+
+```
+
+Total number of effect sizes reported for subsyndromal depression:
+
+```{r subsyndromal-descriptives-n}
+#total effect sizes
+nrow(subsyndromal_depression)
+
+```
+
+Meta-Analysis Results: The degrees of freedom are below the threshold to use robust variance estimation to conduct meta-analysis on subsyndromal depression. 
+
+#### Depression Symptoms
+
+Number and percentage of studies reporting effect size data on depression symptoms: 
+
+```{r ds-descriptives-es}
+#number/% of studies with effect sizes
+length(unique(depression_symptoms$study)) 
+length(unique(depression_symptoms$study)) / sum(ps_elig_td$decision == "Include") * 100 
+
+```
+
+Number and percentage of participants across studies with effect size data: 
+
+```{r ds-descriptives-participants}
+#get list of studies that included depression symptoms effect size
+depsymp_studs <- depression_symptoms %>% 
+  distinct(study) %>% 
+  pull(study)
+
+#filter study level data for only those that have effect sizes
+sl_depsymp <- td_study %>% 
+  filter(study_author_year %in% depsymp_studs | primary_study_id == 1029) #specify possel 2004 due to accent in one file
+
+#sum and percent
+sum(sl_depsymp$number_participants) 
+sum(sl_depsymp$number_participants) / sum(td_study$number_participants) * 100 
+
+```
+
+Most commonly used measures for depression symptoms: 
+
+```{r ds-descriptives-measures}
+#most common measures
+depsymp_measure <- depression_symptoms %>% 
+  mutate_outcome_measure() %>% 
+  distinct(study, agg_outcome_meas, .keep_all = TRUE) %>% 
+  group_by(agg_outcome_meas) %>% 
+  summarize(n = n(),
+            percent = n/length(unique(depression_symptoms$study))*100) %>% 
+  arrange(desc(n))
+depsymp_measure
+
+```
+
+Range and median for length of follow-up: 
+
+```{r ds-descriptives-followup}
+#range/median of length of follow up
+range(depression_symptoms$outcome_timepoint) 
+median(depression_symptoms$outcome_timepoint) 
+
+```
+
+Range and median of number of effect estimates reported per study: 
+
+```{r ds-descriptives-studyeffects}
+#calculate number of effect estimates per study
+depsymp_effects <- depression_symptoms %>% 
+  group_by(study) %>% 
+  summarize(n = n()) %>% 
+  arrange(desc(n)) %>% 
+  ungroup()
+
+#range/median of number of effects per study
+range(depsymp_effects$n)
+median(depsymp_effects$n)
+
+```
+
+Total number of effect sizes reported for depression symptoms: 
+
+```{r ds-descriptives-n}
+#total effect sizes
+nrow(depression_symptoms) 
+```
+
+Conduct random effects robust variance meta-analysis: 
+
+```{r MA-ds-RVE}
+#conduct RVE
+ds_intercept <- robu(formula = yi ~ 1, data = depression_symptoms, studynum = study, var.eff.size = vi, rho = .8, small = TRUE)
+ds_intercept 
+
+```
+
+Calculate prediction interval: 
+
+```{r MA-ds-PI}
+#extract values from meta-analysis
+depsymp_estimate <- ds_intercept$reg_table$b.r
+depsymp_tausq <- as.numeric(ds_intercept$mod_info$tau.sq)
+depsymp_se <- ds_intercept$reg_table$SE
+depsymp_k <- ds_intercept$N 
+
+#determine critical t-value
+depsymp_criticalt <- qt(p = .05/2, df = depsymp_k - 2, lower.tail = FALSE)
+
+#calculate prediction interval
+depsymp_pilower <- depsymp_estimate - (depsymp_criticalt *sqrt(depsymp_tausq + (depsymp_se^2)))
+depsymp_piupper <- depsymp_estimate + (depsymp_criticalt *sqrt(depsymp_tausq + (depsymp_se^2)))
+paste(round(depsymp_pilower, 2), round(depsymp_piupper, 2))
+
+```
+
+### KQ3: What is the effect of school-based depression prevention interventions on non-depression outcomes related to student well-being and educational achievement?
+
+#### Anxiety Symptoms
+
+Number and percentage of studies reporting effect size data on anxiety symptoms: 
+
+```{r anxiety-descriptives-es}
+#number/% of studies with effect sizes
+length(unique(anxiety_symptoms$study)) 
+length(unique(anxiety_symptoms$study)) / sum(ps_elig_td$decision == "Include") * 100 
+
+```
+
+Number and percentage of participants across studies with effect size data: 
+
+```{r anxiety-descriptives-participants}
+#get list of studies that included anxiety symptoms effect size
+anxiety_studs <- anxiety_symptoms %>% 
+  distinct(study) %>% 
+  pull(study)
+
+#filter study level data for only those that have effect sizes
+sl_anxiety <- td_study %>% 
+  filter(study_author_year %in% anxiety_studs)
+
+#sum and percent
+sum(sl_anxiety$number_participants)
+sum(sl_anxiety$number_participants) / sum(td_study$number_participants) * 100
+
+```
+
+Most commonly used measures for anxiety symptoms:
+
+```{r anxiety-descriptives-measures}
+#most common measures
+anxiety_measure <- anxiety_symptoms %>% 
+  mutate_outcome_measure() %>% 
+  distinct(study, agg_outcome_meas, .keep_all = TRUE) %>% 
+  group_by(agg_outcome_meas) %>% 
+  summarize(n = n(),
+            percent = n/length(unique(anxiety_symptoms$study))*100) %>% 
+  arrange(desc(n))
+anxiety_measure
+
+```
+
+Range and median for length of follow-up:
+
+```{r anxiety-descriptives-followup}
+#range/median of length of follow up
+range(anxiety_symptoms$outcome_timepoint) 
+median(anxiety_symptoms$outcome_timepoint) 
+
+```
+
+Range and median of number of effect estimates reported per study:
+
+```{r anxiety-descriptives-studyeffects}
+#calculate number of effect estimates per study
+anxiety_effects <- anxiety_symptoms %>% 
+  group_by(study) %>% 
+  summarize(n = n()) %>% 
+  arrange(desc(n)) %>% 
+  ungroup()
+
+##range/median of number of effects per study
+range(anxiety_effects$n) 
+median(anxiety_effects$n)
+
+```
+
+Total number of effect sizes reported for anxiety:
+
+```{r anxiety-descriptives-n}
+#total effect sizes
+nrow(anxiety_symptoms) 
+```
+
+calculate effect sizes and conduct random effects robust variance meta-analysis:
+
+```{r MA-anxiety}
+#calculate effect sizes
+as_escalc <- escalc(measure="SMD", m1i = followup_intervention_mean, sd1i = followup_intervention_sd, n1i = followup_intervention_n_ess, m2i = followup_comparison_mean, sd2i = followup_comparison_sd, n2i = followup_comparison_n_ess, data = anxiety_symptoms)
+
+#conduct RVE for anxiety
+as_intercept <- robu(formula = yi ~ 1, data = as_escalc, studynum = study, var.eff.size = vi, rho = .8, small = TRUE)
+as_intercept
+
+```
+
+Calculate prediction interval:
+
+```{r MA-anxiety-PI}
+#extract values from meta-analysis
+anx_estimate <- as_intercept$reg_table$b.r
+anx_se <- as_intercept$reg_table$SE
+anx_tausq <- as.numeric(as_intercept$mod_info$tau.sq)
+anx_k <- as_intercept$N 
+
+#determine critical t-value
+anx_criticalt <- qt(p = .05/2, df = anx_k - 2, lower.tail = FALSE)
+
+#calculate prediction interval
+anx_pilower <- anx_estimate - (anx_criticalt*sqrt(anx_tausq + (anx_se^2)))
+anx_piupper <- anx_estimate + (anx_criticalt*sqrt(anx_tausq + (anx_se^2)))
+paste(round(anx_pilower, 2), round(anx_piupper, 2))
+
+```
+
+#### Educational Achievement
+
+Number and percentage of studies reporting effect size data on educational achievement:
+
+```{r ea-descriptives-es}
+#number/% of studies with effect sizes
+length(unique(edu_achievement$study)) 
+length(unique(edu_achievement$study)) / sum(ps_elig_td$decision == "Include") * 100 
+
+```
+
+Number and percentage of participants across studies with effect size data: 
+
+```{r ea-descriptives-participants}
+#get list of studies that included effect size
+eduach_studs <- edu_achievement %>% 
+  distinct(study) %>% 
+  pull(study)
+
+#filter study level data for only those that have effect sizes
+sl_eduach <- td_study %>% 
+  filter(study_author_year %in% eduach_studs)
+
+#sum and percent
+sum(sl_eduach$number_participants) 
+sum(sl_eduach$number_participants) / sum(td_study$number_participants) * 100 
+
+```
+
+Meta-Analysis Results: The degrees of freedom are below the threshold to use robust variance estimation to conduct meta-analysis on educational achievement. 
+
+#### Self-Harm
+
+Number and percentage of studies reporting effect size data on self-harm:
+
+```{r sh-descriptives-es}
+#number/% of studies with effect sizes 
+length(unique(self_harm$study)) 
+length(unique(self_harm$study)) / sum(ps_elig_td$decision == "Include") * 100 
+
+```
+
+Number and percentage of participants across studies with effect size data:
+
+```{r sh-descriptives-participants}
+#get list of studies that included effect size
+selfharm_studs <- self_harm %>% 
+  distinct(study) %>% 
+  pull(study)
+
+#filter study level data for only those that have effect sizes
+sl_selfharm <- td_study %>% 
+  filter(study_author_year %in% selfharm_studs)
+
+#sum and percent
+sum(sl_selfharm$number_participants) 
+sum(sl_selfharm$number_participants) / sum(td_study$number_participants) * 100 
+```
+
+Meta-Analysis Results: The degrees of freedom are below the threshold to use robust variance estimation to conduct meta-analysis on self-harm. 
+
+#### Stress
+
+Number and percentage of studies reporting effect size data on stress:
+
+```{r stress-descriptives-es}
+#number/% of studies with effect sizes
+length(unique(stress$study))
+length(unique(stress$study)) / sum(ps_elig_td$decision == "Include") * 100
+
+```
+
+Number and percentage of participants across studies with effect size data:
+
+```{r stress-descriptives-participants}
+#get list of studies that included effect size
+stress_studs <- stress %>% 
+  distinct(study) %>% 
+  pull(study)
+
+#filter study level data for only those that have effect sizes
+sl_stress <- td_study %>% 
+  filter(study_author_year %in% stress_studs)
+
+#sum and percent
+sum(sl_stress$number_participants) 
+sum(sl_stress$number_participants) / sum(td_study$number_participants) * 100 
+
+```
+
+Meta-Analysis Results: The degrees of freedom are below the threshold to use robust variance estimation to conduct meta-analysis on stress. 
+
+#### Substance-Use
+
+Number and percentage of studies reporting effect size data on substance-use:
+
+```{r su-descriptives-es}
+#number/% of studies with effect sizes
+length(unique(substance_use$study))
+length(unique(substance_use$study)) / sum(ps_elig_td$decision == "Include") * 100
+
+```
+
+Number and percentage of participants across studies reporting effect size data:
+
+```{r su-descriptives-participants}
+#get list of studies that included effect size
+subuse_studs <- substance_use %>% 
+  distinct(study) %>% 
+  pull(study)
+
+#filter study level data for only those that have effect sizes
+sl_subuse <- td_study %>% 
+  filter(study_author_year %in% subuse_studs)
+
+#sum and percent
+sum(sl_subuse$number_participants) #5030
+sum(sl_subuse$number_participants) / sum(td_study$number_participants) * 100 #10.53%
+
+```
+
+Meta-Analysis Results: The degrees of freedom are below the threshold to use robust variance estimation to conduct meta-analysis on substance-use 
+
+#### Suicidal Ideation
+
+Number and percentage of studies reporting effect size data on suicidal ideation:
+
+```{r si-descriptives-es}
+#number/% of studies with effect sizes
+length(unique(suicidal_ideation$study)) #1
+length(unique(suicidal_ideation$study)) / sum(ps_elig_td$decision == "Include") * 100 #1.49%
+
+```
+
+Number and percentage of participants across studies reporting effect size data:
+
+```{r si-descriptives-participants}
+#get list of studies that included effect size
+suicide_studs <- suicidal_ideation %>% 
+  distinct(study) %>% 
+  pull(study)
+
+#filter study level data for only those that have effect sizes
+sl_suicide <- td_study %>% 
+  filter(study_author_year %in% suicide_studs)
+
+#sum and percent
+sum(sl_suicide$number_participants) #540
+sum(sl_suicide$number_participants) / sum(td_study$number_participants) * 100 #1.13%
+```
+
+Meta-Analysis Results: The degrees of freedom are below the threshold to use robust variance estimation to conduct meta-analysis on suicidal ideation. 
+
+#### Well-being
+
+Number and percentage of studies reporting effect size data on well-being: 
+
+```{r wb-descriptives-es}
+#number/% of studies with effect sizes
+length(unique(well_being$study)) 
+length(unique(well_being$study)) / sum(ps_elig_td$decision == "Include") * 100 
+
+```
+
+Number and percentage of participants across studies reporting effect size data:
+
+```{r wb-descriptives-participants}
+#get list of studies that included effect size
+wellbeing_studs <- well_being %>% 
+  distinct(study) %>% 
+  pull(study)
+
+#filter study level data for only those that have effect sizes
+sl_wellbeing <- td_study %>% 
+  filter(study_author_year %in% wellbeing_studs)
+
+#sum and percent
+sum(sl_wellbeing$number_participants)
+sum(sl_wellbeing$number_participants) / sum(td_study$number_participants) * 100 
+
+```
+
+Most commonly used measures for well-being:
+
+```{r wb-descriptives-measures}
+#most common measures for well-being
+wellbeing_measure <- well_being %>% 
+  distinct(study, outcome_measure, .keep_all = TRUE) %>% 
+  group_by(outcome_measure) %>% 
+  summarize(n = n(),
+            percent = n/length(unique(well_being$study))*100) %>% 
+  arrange(desc(n))
+wellbeing_measure
+
+```
+
+Meta-Analysis Results: The degrees of freedom are below the threshold to use robust variance estimation to conduct meta-analysis on well-being 
+
+### KQ4: Do effects vary by methodological, demographic, and intervention characteristics?
+
+Meta-regression results examining heterogeneity in effect estimates for depression symptoms due to: 
+
+Type of assignment to interventions:
+
+```{r MR-KQ4-assignment}
+#meta-regression for assignment to interventions
+rct_metaregression <- robu(formula = yi ~ RCT, data = depression_symptoms, studynum = study, var.eff.size = vi, rho = .8, small = TRUE)
+rct_metaregression
+
+```
+
+Risk of bias:
+
+```{r MR-KQ4-rob}
+#meta-regression for risk of bias
+rob_metaregression <- robu(formula = yi ~ high_rob, data = depression_symptoms, studynum = study, var.eff.size = vi, rho = .8, small = TRUE)
+rob_metaregression
+
+```
+
+Baseline depression:
+
+```{r MR-KQ4-bd}
+#meta-regression for baseline depression
+bd_metaregression <- robu(formula = yi ~ baseline_depression, data = depression_symptoms, studynum = study, var.eff.size = vi, rho = .8, small = TRUE)
+bd_metaregression
+
+```
+
+School level:
+
+```{r MR-KQ4-schllevel}
+#meta-regression for school level
+sl_metaregression <- robu(formula = yi ~ secondary_school, data = depression_symptoms, studynum = study, var.eff.size = vi, rho = .8, small = TRUE)
+sl_metaregression
+
+```
+
+School type:
+
+```{r MR-KQ4-schltype}
+#meta-regression for school type
+public_metaregression <- robu(formula = yi ~ public_school, data = depression_symptoms, studynum = study, var.eff.size = vi, rho = .8, small = TRUE)
+public_metaregression
+
+```
+
+Country:
+
+```{r MR-KQ4-country}
+#meta-regression for country
+country_metaregression <- robu(formula = yi ~ united_states, data = depression_symptoms, studynum = study, var.eff.size = vi, rho = .8, small = TRUE)
+country_metaregression
+
+```
+
+Level of prevention:
+
+```{r MR-KQ4-prevention}
+#meta-regression for level of prevention
+prevention_metaregression <- robu(formula = yi ~ primary_prevention, data = depression_symptoms, studynum = study, var.eff.size = vi, rho = .8, small = TRUE)
+prevention_metaregression
+
+```
+
+Comparator type:
+
+```{r MR-KQ4-comptype}
+#meta-regression for comparator type
+comparator_metaregression <- robu(formula = yi ~ tau_comparator, data = depression_symptoms, studynum = study, var.eff.size = vi, rho = .8, small = TRUE)
+comparator_metaregression
+
+```
+
+Publication year:
+
+```{r MR-KQ4-year}
+#meta-regression for publication year
+year_metaregression <- robu(formula = yi ~ publication_year, data = depression_symptoms, studynum = study, var.eff.size = vi, rho = .8, small = TRUE)
+year_metaregression
+
+```
+
+
+
 ## Tables
 
 Add tables code for review and eligibility data that we do have!!!!!!!!! TO CHECK IF IT WILL RUN! AND UPDATE REPORT
@@ -1800,7 +2587,7 @@ cca_inc <- td_cm %>%
   rename(` Current Review` = `Current Review`)
 
 #create pairwise heatmap with CCA(%), including our review
-f2 <- cca_heatmap(cca_inc, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 2.5) +
+f2 <- cca_heatmap(cca_inc, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 3) +
   ggplot2::theme(
       plot.caption = ggplot2::element_text(size = 16, margin=ggplot2::margin(30,0,0,0)),
       legend.title = ggplot2::element_text(size = 16, face = "bold", vjust=4),
@@ -1821,14 +2608,16 @@ f2
 ```
 
 Save figure 2 to `report/figures` project folder: 
-*NEED TO CHANGE RATIO/ZOOM TO SAVE AS IMAGE FILE*   
 
 ```{r save-f2}
-ggsave(here("report", "figures", "f2_heatmap.png"), plot = f2, dpi = 1000)
+#set image dimensions and file path to save
+png(here("report", "figures", "f2_heatmap.png"), width = 1000, height = 1000)
 
-# png(here("report", "figures", "f2_heatmap2.png"))
-# f2
-# dev.off()
+#show plot
+f2
+
+#save png of plot
+dev.off()
 ```
 
 ### Figure 3. Overlap of eligible studies across systematic reviews
@@ -1843,7 +2632,7 @@ cca_elig <- td_cm %>%
   rename(` Current Review` = `Current Review`)
 
 #create pairwise heatmap with CCA(%)
-f3 <- cca_heatmap(cca_elig, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 2.7) +
+f3 <- cca_heatmap(cca_elig, decimal_digits = 0, fontsize = 4.5, fontsize_diag = 3.2) +
   ggplot2::theme(
       plot.caption = ggplot2::element_text(size = 16, margin=ggplot2::margin(30,0,0,0)),
       legend.title = ggplot2::element_text(size = 16, face = "bold", vjust=4),
@@ -1866,7 +2655,14 @@ print(f3)
 Save figure 3 to `report/figures` project folder: 
 
 ```{r save-f3}
+#set image dimensions and file path to save
+png(here("report", "figures", "f3_heatmap.png"), width = 1000, height = 1000)
 
+#show plot
+f3
+
+#save png of plot
+dev.off()
 ```
 
 ## Appendices
