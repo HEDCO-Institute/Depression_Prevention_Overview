@@ -80,7 +80,7 @@ review_level <- read_excel(rd_path, sheet = "review_level")
 review_amstar <- read_excel(rd_path, sheet = "amstar")
 
 #import review level risk of bias data
-#review_robis <- read_excel(rd_path, sheet = "robis") 
+review_robis <- read_excel(rd_path, sheet = "robis") 
 
 ```
 
@@ -219,10 +219,10 @@ td_amstar <- review_amstar %>%
   arrange(review_author_year) 
 
 #merge review names into review_robis data
-# td_robis <- review_robis %>% 
-#   left_join(review_idbyname) %>% 
-#   select(review_author_year, everything()) %>% 
-#   arrange(review_author_year) 
+td_robis <- review_robis %>%
+  left_join(review_idbyname) %>%
+  select(review_author_year, everything()) %>%
+  arrange(review_author_year)
 
 ```
 
@@ -736,8 +736,8 @@ Number and percentage of reviews with high risk of bias:
 
 ```{r robis-high}
 #number/% of high risk
-sum(td_robis$robis_overall_rating == "1. High") #12
-sum(td_robis$robis_overall_rating == "1. High")  / nrow(td_robis) * 100 #50%
+sum(td_robis$robis_overall_rating == "1. High") 
+sum(td_robis$robis_overall_rating == "1. High")  / nrow(td_robis) * 100 
 
 ```
 
@@ -747,7 +747,7 @@ Calculate the most common concerns about risk of bias among reviews:
 #select ratings, transform to long format, calculate percent with high risk
 robis_concerns <- td_robis %>% 
   select(review_author_year, ends_with("decision"), robis_overall_a, 
-         robis_overall_b, robis_overall_c, robis_overall_rating) %>% 
+         robis_overall_b, robis_overall_c) %>% 
   pivot_longer(cols = 2:9) %>% 
   group_by(name) %>% 
   summarize(n_decision = sum(value == "1. High"),
@@ -2407,6 +2407,80 @@ gtsave(t2_formatted, filename = "table_2.html", path = here("report", "tables"))
 
 ```
 
+### Table 3. Risk of Bias in Included Systematic Reviews (ROBIS)
+
+Format rankings for reporting in table: 
+
+```{r robis-table}
+#remove leading numbers, select variables
+t3 <- td_robis %>% 
+    mutate_if(is.character, ~case_when(. == "1. High" ~ "High",
+                                     . == "2. Low" ~ "Low",
+                                     . == "3. Unclear" ~ "Unclear",
+                                     . == "1. Yes" ~ "Yes",
+                                     . == "2. Probably Yes" ~ "Probably Yes",
+                                     . == "3. Probably No" ~ "Probably No",
+                                     . == "4. No" ~ "No",
+                                     . == "5. No information" ~ "No Information",
+                                     TRUE ~ .)) %>% 
+  select(review_author_year, ends_with("decision"), robis_overall_a, robis_overall_b, robis_overall_c, robis_overall_rating) %>% 
+  arrange(str_to_lower(review_author_year))
+
+```
+
+Create table 3 and format table:
+
+```{r t3-format}
+#create gt table
+t3_formatted <- t3 %>% 
+  gt() %>% 
+  cols_label(review_author_year = "Review", 
+             robis_1_decision = "Domain 1",
+             robis_2_decision = "Domain 2",
+             robis_3_decision = "Domain 3",
+             robis_4_decision = "Domain 4",
+             robis_overall_a = "Interpretation",
+             robis_overall_b = "Relevance",
+             robis_overall_c = "Spin",
+             robis_overall_rating = "Overall") %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1))),
+            locations = cells_body(columns = everything())) %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1)),
+                         cell_text(weight = "bold")),
+            locations = cells_column_labels()) %>% 
+   tab_options(column_labels.border.top.color = "black",
+              column_labels.border.bottom.color = "black",
+              table_body.border.bottom.color = "black",
+              table.border.top.color = "white",
+              heading.border.bottom.color = "black",
+              table_body.hlines.color = "white",
+              table.border.bottom.color = "white",
+              table.font.names = "Times New Roman") %>% 
+   cols_width(review_author_year ~ px(150),
+              robis_overall_a ~ px(110),
+              robis_overall_b ~ px(100),
+              robis_overall_c ~ px(100),
+              everything() ~ px(100),
+              robis_overall_rating ~ px(50)) %>% 
+  data_color(columns = 2:9,
+             colors = scales::col_factor(palette = c("#e03531", "#8ace7e", "#e03531", "gray60", "#ef9997", "#b2dfa8", "#ffda66", "#8ace7e"),
+                                         domain = c("High", "Low", "No", "No Information", "Probably No", "Probably Yes", "Unclear", "Yes")))
+
+
+print(t3_formatted)
+
+```
+
+Save table 3 to `report/tables`` project folder: 
+
+```{r t3-save}
+#save as html
+gtsave(t3_formatted, filename = "table_3.html", path = here("report", "tables"))
+
+#save as word doc
+#gtsave(t3_formatted, filename = "table3_word.docx")
+
+```
 
 
 ## Figures
@@ -2663,6 +2737,30 @@ f3
 
 #save png of plot
 dev.off()
+```
+
+### Figure 4. Forest plot for depression diagnosis meta-analysis
+
+Create forest plot for depression diagnosis results: 
+
+```{r f4-forestplot}
+#create forest plot
+forest.robu(dd_intercept, es.lab = "outcome_measure", study.lab = "study", "Follow-up" = outcome_timepoint, "Intervention" = intervention)
+
+```
+
+Save forest plot as pdf with specified page dimensions: 
+
+```{r f4-forestplot}
+#set page dimensions and file path to save
+pdf(here("report", "figures", "f4_forestplot.pdf"), width = 20, height = 15)
+
+#forest plot to save
+forest.robu(dd_intercept, es.lab = "outcome_measure", study.lab = "study", "Follow-up" = outcome_timepoint, "Intervention" = intervention)
+
+#save pdf of plot
+dev.off()
+
 ```
 
 ## Appendices
