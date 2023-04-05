@@ -2685,7 +2685,7 @@ Save figure 2 to `report/figures` project folder:
 
 ```{r save-f2}
 #set image dimensions and file path to save
-png(here("report", "figures", "f2_heatmap.png"), width = 1000, height = 1000)
+png(here("report", "figures", "figure2_heatmap.png"), width = 1000, height = 1000)
 
 #show plot
 f2
@@ -2730,7 +2730,7 @@ Save figure 3 to `report/figures` project folder:
 
 ```{r save-f3}
 #set image dimensions and file path to save
-png(here("report", "figures", "f3_heatmap.png"), width = 1000, height = 1000)
+png(here("report", "figures", "figure3_heatmap.png"), width = 1000, height = 1000)
 
 #show plot
 f3
@@ -2753,7 +2753,7 @@ Save forest plot as pdf with specified page dimensions:
 
 ```{r f4-forestplot}
 #set page dimensions and file path to save
-pdf(here("report", "figures", "f4_forestplot.pdf"), width = 20, height = 15)
+pdf(here("report", "figures", "figure4_forestplot.pdf"), width = 20, height = 15)
 
 #forest plot to save
 forest.robu(dd_intercept, es.lab = "outcome_measure", study.lab = "study", "Follow-up" = outcome_timepoint, "Intervention" = intervention)
