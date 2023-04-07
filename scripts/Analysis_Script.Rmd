@@ -121,7 +121,6 @@ outcome_level <- read_excel(sd_path, sheet = "outcome_level")
 
 ```
 
-
 Import cleaned, meta-analysis data in `Depression_Overview_MetaAnalysis_Data.xlsx`
 * Effect size data for each included primary study
 * Each outcome of interest is in a separate tab (e.g., depression diagnosis)
@@ -754,7 +753,7 @@ Calculate the most common concerns about risk of bias among reviews:
 robis_concerns <- td_robis %>% 
   select(review_author_year, ends_with("decision"), robis_overall_a, 
          robis_overall_b, robis_overall_c) %>% 
-  pivot_longer(cols = 2:9) %>% 
+  pivot_longer(cols = 2:8) %>% 
   group_by(name) %>% 
   summarize(n_decision = sum(value == "1. High"),
             per_decision = sum(value == "1. High") / nrow(td_robis) * 100,
@@ -2265,11 +2264,7 @@ year_metaregression
 
 ```
 
-
-
 ## Tables
-
-Add tables code for review and eligibility data that we do have!!!!!!!!! TO CHECK IF IT WILL RUN! AND UPDATE REPORT
 
 ### Table 1. Descriptive characteristics per each included systematic review
 
@@ -2652,7 +2647,7 @@ gtsave(t4_formatted, filename = "table_4.html", path = here("report", "tables"))
 Using Zotero info and reference_level file (for review level), calculate information for prisma & screening/eligibility reporting.
 
 Calculate numbers for PRISMA diagram (review-level):
- * The only value not in our dataset is the number of records identified in the search before duplicate removal. Our last search on **DATE** yielded *5,223* records that were imported into Zotero before duplicate removal. 
+ * The only value not in our dataset is the number of records identified in the search before duplicate removal. Our last search yielded *5,223* records that were imported into Zotero before duplicate removal. 
 
 ```{r prisma, echo = FALSE}
 #number of records imported for abstract screening
@@ -2809,8 +2804,6 @@ webshot("temp.html", here("report", "figures", "figure1_prisma.png"))
 file.remove("temp.html")
 
 ```
-
-**^^SHOULD WE INCLUDE ALL REASONS EVEN IF 0? If not reproducing exactly, yes.**
 
 ### Figure 2. Overlap of included studies across systematic reviews
 
@@ -3156,8 +3149,6 @@ gtsave(a3_formatted, filename = "appendix_3.html", path = here("report", "append
 # gtsave(a3_formatted, filename = "appendix3_pdf.pdf")
 ```
 
-**ABOVE ONE AND REST OF BELOW PRODUCES TABLE WITH INCORRECTLY FORMATTED REFERENCE - WAITING TO SEE IF PAPAJA PACKAGE AND .BIB WILL HELP WITH THIS FOR EXACT REPLICATION**
-
 ### Appendix 4. Descriptive characteristics for each included systematic review 
 
 Select information to display in appendix 4 (descriptive characteristics for each included systematic review) and format data for table:
@@ -3211,7 +3202,6 @@ a4 <- a4_info %>%
   left_join(rev_titles, by = "merge_author") %>% 
   left_join(review_reports, by = "merge_author") %>% 
   mutate_at(vars(starts_with("review_eligibility")), list(~ str_replace_all(., "\\s-\\s(?=[A-Z])", "<br> - "))) %>% 
-  #mutate_at(vars(starts_with("review_eligibility")), ~ str_replace(., "^<br>", "")) %>% 
   mutate_at(vars(starts_with("review_eligibility")), ~ str_replace_all(., "- ([A-Z])", " <li>\\1")) %>% 
   mutate_at(vars(starts_with("review_eligibility")), ~ paste0("<ul>", ., "</ul>")) %>% 
   rename(review_author_year = review_author_year.x) %>% 
@@ -3266,19 +3256,13 @@ list_gt <- lapply(split(combined_a4, combined_a4$source), function(x) {
                value = "") %>% 
     tab_style(style = list(cell_text(weight = "bold")),
             locations = cells_body(columns = "variable")) %>% 
-    #tab_row_group(rows = 10:17, label = "", id = "group3") %>% 
     tab_row_group(rows = 3:9, label = "Eligibility Criteria:") %>% 
     tab_row_group(rows = 1:2, label = "", id = "group1") %>% 
-    tab_options(#row_group.border.bottom.width = 0,
-                #row_group.border.bottom.color = "white",
-                table.font.names = "Times New Roman") %>% 
+    tab_options(table.font.names = "Times New Roman") %>% 
     tab_style(style = cell_text(weight = "bold"), locations = cells_row_groups()) %>% 
     tab_style(style = cell_text(align = "right"), locations = cells_body(columns = "variable", rows = 3:9)) %>%
-    #tab_style(style = cell_borders(sides = "top", color = "white", weight = px(0)), locations = cells_body(rows = 10)) %>% 
     fmt_markdown()
 })
-
-list_gt[1]
 
 #extract HTML code of table
 html_code <- list_gt %>% 
@@ -3408,7 +3392,7 @@ study_reports <- ps_citations %>%
   group_by(study) %>% 
   summarize(all_reports = paste(citation, collapse = " ; ")) %>% 
   ungroup() %>% 
-  mutate(all_reports = str_replace_all(all_reports, "; ", "<br><br>")) %>% #\\\\n
+  mutate(all_reports = str_replace_all(all_reports, "; ", "<br><br>")) %>% 
   rename(study_author_year = study)
 
 #extract titles and study names from Zotero .bib
@@ -3438,57 +3422,14 @@ a5 <- a5_rob %>%
          merge_author = stri_trans_general(author_year, "Latin-ASCII"),
          merge_author = str_to_lower(merge_author)) %>% 
   left_join(study_ref_info, by = "merge_author", multiple = "all") %>% 
+  distinct(study_author_year, .keep_all = TRUE) %>% 
   select(study_author_year, title, study_start_date, study_end_date, recruitment_approach, 
          eligibility_criteria, research_design, assignment_level, cluster_type, cluster_size, study_groups,
          sample_size, grd_schl_level, age_mean_sd, percent_female, percent_race_ethnicity, percent_ELL, percent_FRPL,
          country_state, urbanicity, school_type, Intervention, Comparison, outcome_list, overall_rob_rating,
          consort_flow_diagram, study_registration, availability_statement, all_reports) %>% 
-  mutate_if(is.numeric, as.character)
-
-
-
-# 
-# #TRY AGAIN
-# #format bib_df
-# bibdf_format <- bib_df %>% 
-#   rowwise() %>% 
-#   mutate(author_unlist = paste(lapply(author, paste, collapse = ","), collapse = ", "),
-#          author = str_extract(author_unlist, "^[^,]+"),
-#          author_year = paste(author, year), 
-#          title = str_replace_all(title, "[{}]", ""),
-#          title = str_remove(title, "\\.$")) %>% 
-#   arrange(str_to_lower(author_year))
-# 
-# ps_author_year <- bibdf_format$author_year
-# ps_title <- bibdf_format$title
-# 
-# # Create a table of the references in APA format
-# apa_refs <- sapply(1:nrow(bibdf_format), function(i) {
-#   # Get the ith reference
-#   ref <- bibdf_format[i, ]
-#   # Format the reference in APA style
-#   ref_string <- paste0(
-#     ref[["author_unlist"]], " (", ref[["year"]], "). ", 
-#     ref[["title"]], ". ", ref[["journal"]], ", ",  
-#     ref[["volume"]], "(", ref[["number"]], "), ", 
-#     ref[["pages"]]
-#   )
-#   # Return the formatted reference
-#   ref_string
-# })
-# 
-# 
-# #as.data,frame
-# aparef_df <- as.data.frame(apa_refs) %>% #MOSTLY IN RIGHT FORMAT - TRY ADDING ITALICS AND INITIALIZE NAMES
-#   mutate(apa_refs = str_replace_all(apa_refs, "\\(NA\\)", ""), 
-#          apa_refs = str_replace_all(apa_refs, "NA", ""),
-#          apa_refs = str_replace_all(apa_refs, "--", "-"),
-#          apa_refs = str_replace_all(apa_refs, ", ,", "")) %>% 
-#   arrange(str_to_lower(apa_refs)) %>% 
-#   cbind(ps_author_year) %>% 
-#   cbind(ps_title) %>% 
-#   rename(study_author_year = ps_author_year)
-#   
+  mutate_if(is.numeric, as.character) %>% 
+  arrange(str_to_lower(stringi::stri_trans_general(study_author_year, "Latin-ASCII")))
 
 ```
 
