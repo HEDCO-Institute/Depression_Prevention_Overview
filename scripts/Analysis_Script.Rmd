@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 #install and load pacman package
-#install.packages("pacman", repos = "http://cran.us.r-project.org") - UNCOMMENT
+install.packages("pacman", repos = "http://cran.us.r-project.org")
 library(pacman)
 
 #install and load required packages
