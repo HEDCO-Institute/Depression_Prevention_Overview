@@ -19,7 +19,7 @@ p_load_gh("thdiakon/ccaR", "mcguinlu/robvis") #from github
 
 ## Overview
 
-**ADD OVERVIEW OF DOCUMENT - E.G., SECTIONS, REPRODUCE DATA REPORTED IN OUR REPORT WITH ANNOTATIONS, SEPARATE FILE TO REPRODUCE EXACT DOCUMENT (papaja)**
+This document produces all the results reported in our technical report: "School-Based Interventions for Primary and Secondary Prevention of Depression: An Overview of Systematic Reviews with Meta-Analyses." The first two sections are importing and data cleaning code followed by code to reproduce our results. Code is presented in the order in which results are presented in the report starting with narrative results, followed by tables, figures, and appendices. Each section has a header that corresponds with the headers in the report. 
 
 ## Import
 
@@ -61,6 +61,11 @@ ps_cm <- read_excel(elig_path, sheet = "citation_matrix")
 
 #import excel citation matrix sheet (without header to transpose for lists of included/eligible reviews)
 citation_matrix <- read_excel(elig_path, sheet = "citation_matrix", col_names = FALSE)
+
+#import main primary study reference from Zotero .bib export
+bib_ps_df <- bib2df(here("data", "included_studies.bib")) %>% 
+  janitor::clean_names()
+
 ```
 
 
@@ -99,14 +104,14 @@ sd_path <- here("data", "Depression_Overview_Primary_Study_Data.xlsx")
 #import primary study level descriptive data
 study_level <- read_excel(sd_path, sheet = "study_level")
 
-# #import study level risk of bias data for individual RCTs
-# study_irob <- read_excel(sd_path, sheet = "iROB") 
-# 
-# #import study level risk of bias data for cluster RCTs
-# study_crob <- read_excel(sd_path, sheet = "cROB") 
-# 
-# #import study level risk of bias data for non-randomized trials
-# study_robins <- read_excel(sd_path, sheet = "ROBINS-I") 
+#import study level risk of bias data for individual RCTs
+study_irob <- read_excel(sd_path, sheet = "iROB")
+
+#import study level risk of bias data for cluster RCTs
+study_crob <- read_excel(sd_path, sheet = "cROB")
+
+#import study level risk of bias data for non-randomized trials
+study_robins <- read_excel(sd_path, sheet = "ROBINS-I")
 
 #import group level descriptive data
 group_level <- read_excel(sd_path, sheet = "group_level")
@@ -248,8 +253,6 @@ Primary Study Level:
 * specify numeric variable types for calculations
 * for numeric variables, specify that -999 is missing for calculations
 * extract a data frame of study ids and study names for merging
-* merge study names into all risk of bias data????????????????????????????????????????????????
-* *correct risk of bias data so each study has one corresponding risk of bias assessment*
 
 ```{r tidy-study}
 #clean study level data
@@ -262,19 +265,17 @@ td_study <- study_level %>%
 study_idbyname <- td_study %>% 
   select(primary_study_id, study_author_year)
 
-# #filter for studies with correct irob info
-# irob_df <- study_irob %>% 
-#   filter(primary_study_id != 1088) %>%  #remove study that should be cluster rob assessment
-#   select(primary_study_id, ends_with("judgment"), iROB_overall_rating)
-# 
-# #filter for studies with crob info
-# crob_df <- study_crob %>% 
-#   filter(primary_study_id != 1085) %>%  #remove study that should be robins-i assessment
-#   select(primary_study_id, ends_with("judgment"), cROB_overall_rating)
-# 
-# #select variables for robins-i info
-# robins_df <- study_robins %>% 
-#   select(primary_study_id, ends_with("judgment"), robins_overall_rating)
+#select variables for irob ratings
+irob_df <- study_irob %>%
+  select(primary_study_id, ends_with("judgment"), iROB_overall_rating)
+
+#select variables for crob ratings
+crob_df <- study_crob %>%
+  select(primary_study_id, ends_with("judgment"), cROB_overall_rating)
+
+#select variables for robins-i info
+robins_df <- study_robins %>%
+  select(primary_study_id, ends_with("judgment"), robins_overall_rating)
   
 ```
 
@@ -359,6 +360,11 @@ mutate_outcome_measure <- function(df){
                                       "Spence Children's Anxiety Scale",
                                       str_detect(outcome_measure_lc, "structured clinical interview") ~ "Structured Clinical Interview",
                                       str_detect(outcome_measure_lc, "diagnostic interview for children and adolescents") ~ "Diagnostic Interview for Children and Adolescents",
+                                      str_detect(outcome_measure_lc, "reynolds child depression scale") ~ "Reynolds Child Depression Scale",
+                                      str_detect(outcome_measure_lc, "revised children's anxiety and depression scale") ~ "Revised Children's Anxiety and Depression Scale", 
+                                      str_detect(outcome_measure_lc, "multidimensional anxiety scale for children") ~ "Multidimensional Anxiety Scale for Children",
+                                      str_detect(outcome_measure_lc, "children’s automatic thoughts scale") ~ "Children’s Automatic Thoughts Scale",
+                                      str_detect(outcome_measure_lc, "stai-ch") ~ "State-Trait Anxiety Inventory for Children",
                                       TRUE ~ outcome_measure))  
 }
 
@@ -1843,6 +1849,18 @@ paste(round(depsymp_pilower, 2), round(depsymp_piupper, 2))
 
 ```
 
+*Calculate cumulative distribution function for t-distribution:*
+
+```{r MA-ds-CDF}
+#calculate t value for CDF calculation
+depsymp_t <- (0 - depsymp_estimate) / sqrt(depsymp_tausq + (depsymp_se^2))
+
+#calculate CDF
+ds_cdf_test <- pt(depsymp_t, depsymp_k - 1)
+ds_cdf_test * 100
+
+```
+
 ### KQ3: What is the effect of school-based depression prevention interventions on non-depression outcomes related to student well-being and educational achievement?
 
 #### Anxiety Symptoms
@@ -1949,6 +1967,18 @@ anx_criticalt <- qt(p = .05/2, df = anx_k - 2, lower.tail = FALSE)
 anx_pilower <- anx_estimate - (anx_criticalt*sqrt(anx_tausq + (anx_se^2)))
 anx_piupper <- anx_estimate + (anx_criticalt*sqrt(anx_tausq + (anx_se^2)))
 paste(round(anx_pilower, 2), round(anx_piupper, 2))
+
+```
+
+*Calculate cumulative distribution function for t-distribution:*
+
+```{r MA-ax-CDF}
+#calculate t value for CDF calculation
+anx_t <- (0 - anx_estimate) / sqrt(anx_tausq + (anx_se^2))
+
+#calculate CDF
+ax_cdf_test <- pt(anx_t, anx_k - 1)
+ax_cdf_test * 100
 
 ```
 
@@ -2482,6 +2512,138 @@ gtsave(t3_formatted, filename = "table_3.html", path = here("report", "tables"))
 
 ```
 
+### Table 4. Characteristics of Included Primary Studies
+
+Select variables for table 4 from the various data sets: 
+
+```{r t4-info}
+#select study level variables for table 4
+t4_info <- td_study %>% 
+  select(primary_study_id, study_author_year, country, number_participants, number_classrooms,
+         number_schools, school_level, research_design, assignment_level, rob_tool)
+
+#select relevant individual rob data
+t4_irob <- study_irob %>% 
+  select(primary_study_id, iROB_overall_rating) %>% 
+  rename(overall_rob_rating = iROB_overall_rating) 
+
+#select relevant cluster rob data
+t4_crob <- study_crob %>% 
+  select(primary_study_id, cROB_overall_rating) %>% 
+  rename(overall_rob_rating = cROB_overall_rating)
+
+#select relevant QED rob data
+t4_robins <- study_robins %>% 
+  select(primary_study_id, robins_overall_rating) %>% 
+  rename(overall_rob_rating = robins_overall_rating) 
+
+#bind together all rob data for primary studies
+t4_allrob <- rbind(t4_irob, t4_crob, t4_robins)
+
+#merge rob info with t4_info and format data for table
+t4 <- t4_info %>% 
+  left_join(t4_allrob) %>% 
+  select(-rob_tool, -primary_study_id) %>% 
+  mutate_at(vars(school_level, research_design, assignment_level, overall_rob_rating), list(~str_remove(., "^[0-9]+\\. "))) %>% 
+  mutate(school_level = str_replace(school_level, ",(...)(.*)", ",\\2")) %>% 
+  mutate(school_level = str_replace(school_level, "School", ""),
+         design = case_when(research_design == "Randomized trial" & assignment_level == "Individual" ~ "Individual RCT",
+                            research_design == "Randomized trial" & assignment_level == "Cluster" ~ "Cluster RCT",
+                            research_design == "QED - Regression adjustment" ~ "QED",
+                            TRUE ~ research_design)) %>% 
+  mutate(school_level = case_when(school_level == "Only Reported Secondary " ~ "Secondary",
+                                  school_level == "Only Reported Primary " ~ "Primary",
+                                  school_level == "Only Reported Primary , Only Reported Secondary School" ~ "Primary , Secondary",
+                                  school_level == "Cannot tell" ~ "NR",
+                                  TRUE ~ school_level)) %>% 
+  mutate(school_level = str_replace(school_level, "(,.)", "and "),
+         number_participants = format(number_participants, big.mark = ",", scientific = FALSE)) %>% 
+  mutate(school_level = str_replace(school_level, "School", "")) %>%
+  mutate_if(is.numeric, as.character) %>% 
+  mutate_all(list(~ifelse(is.na(.), "NR", .))) %>% 
+  select(study_author_year:school_level, design, overall_rob_rating)
+
+#select variables needed from group level data
+t4_group <- group_level %>% 
+  select(primary_study_id, group_number, group_type, gname, ig_group_type,  comparison_type) %>%
+  left_join(study_idbyname) %>% 
+  mutate_all(list(~ifelse(. == -999, "Not reported", .))) %>% 
+  mutate_at(vars(group_type, ig_group_type, comparison_type), list(~str_remove(., "^[0-9]+\\. "))) %>% 
+  select(primary_study_id, study_author_year, everything()) %>% 
+  arrange(study_author_year) 
+
+#transform intervention names data to merge
+t4group_intnames <- t4_group %>% 
+  group_by(study_author_year, group_type) %>% 
+  summarize(group_names = paste(gname, collapse = "; ")) %>% 
+  ungroup() %>% 
+  filter(group_type == "Intervention")
+
+#transform comparison types data to merge
+t4group_compnames <- t4_group %>% 
+  mutate(comparison_type = case_when(comparison_type == "Active" ~ paste("Active:", gname),
+                                     TRUE ~ comparison_type)) %>% 
+  group_by(study_author_year, group_type) %>% 
+  summarize(comp_type = paste(comparison_type, collapse = "; ")) %>% 
+  ungroup() %>% 
+  filter(group_type == "Comparison")
+
+#merge group names and transform to wide format
+t4group_wide <- t4group_intnames %>% 
+  left_join(t4group_compnames, by = "study_author_year") %>% 
+  rename(Intervention = group_names,
+         Comparison = comp_type) %>% 
+  select(-starts_with("group")) %>% 
+  mutate_all(~ str_replace_all(., "Cannot tell", "NR"))
+
+#merge group level with study level data
+t4_full <- left_join(t4, t4group_wide) %>% 
+  select(study_author_year:school_level, Intervention, Comparison, design, overall_rob_rating) %>% 
+  arrange(str_to_lower(stringi::stri_trans_general(study_author_year, "Latin-ASCII")))
+
+```
+
+Create table 4 and format table:
+
+```{r t4-format}
+#create gt table 
+t4_formatted <- t4_full %>% 
+  gt() %>% 
+  cols_label(study_author_year = "Study", 
+             country = "Country",
+             number_participants = "Students",
+             number_classrooms = "Classrooms",
+             number_schools = "Schools",
+             school_level = "Level",
+             design = "Design",
+             overall_rob_rating = "Risk of Bias") %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1))),
+            locations = cells_body(columns = everything())) %>% 
+  tab_style(style = list(cell_borders(sides = "all", color = "black", weight = px(1)),
+                         cell_text(weight = "bold")),
+            locations = cells_column_labels()) %>% 
+  tab_options(column_labels.border.top.color = "black",
+              column_labels.border.bottom.color = "black",
+              table_body.border.bottom.color = "black",
+              table.border.top.color = "white",
+              heading.border.bottom.color = "black",
+              table_body.hlines.color = "white",
+              table.border.bottom.color = "white",
+              table.font.names = "Times New Roman") %>% 
+  tab_style(style = cell_text(align = "left"), locations = cells_body(columns = "number_participants")) %>% 
+  tab_footnote(footnote = md("**NR = Not reported; TAU: Treatment as usual; RCT = Randomized controlled trial; QED = Quasi-experimental design**"))
+
+print(t4_formatted)
+
+```
+
+Save table 3 to `report/tables`` project folder: 
+
+```{r t3-save}
+#save as html
+gtsave(t4_formatted, filename = "table_4.html", path = here("report", "tables"))
+
+```
 
 ## Figures
 
@@ -2998,7 +3160,7 @@ gtsave(a3_formatted, filename = "appendix_3.html", path = here("report", "append
 
 ### Appendix 4. Descriptive characteristics for each included systematic review 
 
-Create data frame with info for appendix 4 - descriptive characteristics for each included systematic review:
+Select information to display in appendix 4 (descriptive characteristics for each included systematic review) and format data for table:
 
 ```{r per-review-descriptives, warning = FALSE}
 #select relevant appendix 4 info
@@ -3135,3 +3297,282 @@ Save appendix 4 to `report/appendices`` project folder:
 writeLines(html_code, here("report", "appendices", "appendix_4.html"))
 
 ```
+
+### Appendix 5. Characteristics of Included Primary Studies
+
+Select information to display in appendix 5 (descriptive characteristics for each included primary study) and format data for table: 
+
+```{r a5-info, warning = FALSE}
+#select study level info and format for table
+a5_info <- td_study %>% 
+  mutate_at(vars(school_level, state, urbanicity, research_design, assignment_level, cluster_type), list(~str_remove(., "^[0-9]+\\. "))) %>% 
+  mutate(school_level = str_replace(school_level, ",(...)(.*)", ",\\2"),
+         urbanicity = str_replace_all(urbanicity, "\\s\\d+\\.", ",")) %>% 
+  mutate(school_level = case_when(school_level == "Only Reported Secondary School" ~ "Secondary School",
+                                  school_level == "Only Reported Primary School" ~ "Primary School",
+                                  school_level == "Only Reported Primary School, Only Reported Secondary School" ~ "Primary School , Secondary School",
+                                  school_level == "Cannot tell" ~ "Not reported",
+                                  TRUE ~ school_level),
+         grade_level = ifelse(grade_level == "Cannot tell", "Not reported", grade_level),
+         urbanicity = str_replace_all(urbanicity, "\\s+,", ","),
+         urbanicity = str_replace_all(urbanicity, ",,", ","),
+         cluster_type = ifelse(assignment_level != "Cluster", "NA", cluster_type),
+         cluster_size = ifelse(assignment_level != "Cluster", "NA", cluster_size)) %>% 
+  mutate(school_level = str_replace(school_level, "(,.)", " and "),
+         percent_mixed = ifelse(percent_mixed == "-999", NA_real_, as.numeric(percent_mixed)),
+         percent_other = ifelse(percent_other == "-999", NA_real_, as.numeric(percent_other)),
+         state = ifelse(state == "Cannot tell", "Not reported", state),
+         research_design = ifelse(research_design == "QED - Regression adjustment", "Quasi-experimental design", research_design)) %>% 
+  mutate(study_start_date = ifelse(nchar(study_start_date) == 10, format(ymd(study_start_date), "%B %d, %Y"), study_start_date),
+         study_end_date = ifelse(nchar(study_end_date) == 10, format(ymd(study_end_date), "%B %d, %Y"), study_end_date)) %>% 
+  mutate(study_start_date = ifelse(nchar(study_start_date) == 7, format(ym(study_start_date), "%B %Y"), study_start_date),
+         study_end_date = ifelse(nchar(study_end_date) == 7, format(ym(study_end_date), "%B %Y"), study_end_date)) %>% 
+  mutate(number_participants = format(number_participants, big.mark = ",", scientific = FALSE),
+         sample_size = case_when(!is.na(number_participants) & !is.na(number_classrooms) & !is.na(number_schools) ~
+                                   paste(number_participants, "students,", number_classrooms, "classrooms,", number_schools, "schools"),
+                                 !is.na(number_participants) & !is.na(number_classrooms) & is.na(number_schools) ~
+                                   paste(number_participants, "students,", number_classrooms, "classrooms"),
+                                 !is.na(number_participants) & is.na(number_classrooms) & is.na(number_schools) ~
+                                   paste(number_participants, "students"),
+                                 !is.na(number_participants) & is.na(number_classrooms) & !is.na(number_schools) ~
+                                   paste(number_participants, "students,", number_schools, "schools"),
+                                 is.na(number_participants) & !is.na(number_classrooms) & !is.na(number_schools) ~
+                                   paste(number_classrooms, "classrooms,", number_schools, "schools"),
+                                 is.na(number_participants) & !is.na(number_classrooms) & is.na(number_schools) ~
+                                   paste(number_classrooms, "classrooms"),
+                                 is.na(number_participants) & is.na(number_classrooms) & !is.na(number_schools) ~
+                                   paste(number_schools, "schools")),
+         sample_size = str_trim(sample_size, side = "left"),
+         grd_schl_level = paste(grade_level, "/", school_level),
+         age_mean_sd = paste0(average_age, " (", age_dispersion, ")"),
+         percent_female = ifelse(!is.na(percent_female), paste0(percent_female * 100, "%"), "Not reported"),
+         percent_ELL = ifelse(!is.na(percent_ELL), paste0(percent_ELL * 100, "%"), "Not reported"),
+         percent_FRPL = ifelse(!is.na(percent_FRPL), paste0(percent_FRPL * 100, "%"), "Not reported"),
+         percent_race_ethnicity = case_when(is.na(percent_white) & is.na(percent_black) & is.na(percent_aian) &
+                                            is.na(percent_asian) & is.na(percent_nhpi) & is.na(percent_latinx) & 
+                                            is.na(percent_mixed) & is.na(percent_other) ~ "Not reported",
+                                            TRUE ~ paste0(percent_aian * 100, "% AIAN, ", percent_asian * 100, "% Asian, ",
+                                                          percent_black * 100, "% Black, ", percent_latinx * 100, "% Latinx, ",
+                                                          percent_nhpi * 100, "% NHPI, ", percent_white * 100, "% White, ", 
+                                                          percent_mixed * 100, "% Mixed, ", percent_other * 100, "% Other")),
+         country_state = case_when(state != "Non-US Study" ~ paste0(country, " (", state, ")"),
+                                   TRUE ~ country)) %>%
+  mutate(age_mean_sd = case_when(age_mean_sd == "NA (-999)" ~ "Not reported",
+                                 str_detect(age_mean_sd, "-999") ~ paste(average_age),
+                                 TRUE ~ age_mean_sd),
+         percent_race_ethnicity = str_replace_all(percent_race_ethnicity, c("NA% AIAN, " = "", "NA% Asian, " = "", "NA% Black, " = "",
+                                                                            "NA% Latinx, " = "", "NA% NHPI, " = "", "NA% White, " = "",
+                                                                            "NA% Mixed, " = "", "NA% Other" = ""))) %>% 
+  mutate(percent_race_ethnicity = gsub(", $", "", percent_race_ethnicity)) %>% 
+  mutate(across(everything(), ~ifelse(.x == -999 | .x == "Cannot tell" | .x == "Cannot Tell" | is.na(.x), "Not reported", .x))) %>%
+  select(study_author_year, study_start_date, study_end_date, recruitment_approach, 
+         eligibility_criteria, research_design, assignment_level, cluster_type, cluster_size, study_groups,
+         sample_size, grd_schl_level, age_mean_sd, percent_female, percent_race_ethnicity, percent_ELL, percent_FRPL,
+         country_state, urbanicity, school_type, consort_flow_diagram, study_registration, availability_statement)
+
+#merge with group/intervention names created for table 4
+a5_groups <- left_join(a5_info, t4group_wide)
+
+#merge with outcome data and combine outcomes for each study
+a5_outcome <- outcome_level %>% 
+  left_join(study_idbyname) %>%
+  mutate(outcome_domain = str_remove(outcome_domain, "^[0-9]+\\. ")) %>% 
+  distinct(study_author_year, outcome_domain, .keep_all = TRUE) %>% 
+  group_by(study_author_year) %>% 
+  summarize(outcome_list = paste(outcome_domain, collapse = ", ")) %>% 
+  ungroup() %>% 
+  mutate(outcome_list = sapply(lapply(str_split(outcome_list, ", "), sort), paste, collapse = ", ")) %>% 
+  select(study_author_year, outcome_list) %>% 
+  right_join(a5_groups) %>% 
+  arrange(str_to_lower(study_author_year))
+
+#merge with rob data created in table 4
+a5_rob <- t4_allrob %>% 
+  left_join(study_idbyname) %>% 
+  right_join(a5_outcome) %>% 
+  mutate(overall_rob_rating = str_remove(overall_rob_rating, "^[0-9]+\\. "),
+         overall_rob_rating = str_replace(overall_rob_rating, "-999", "Not reported")) %>% 
+  select(study_author_year, study_start_date, study_end_date, recruitment_approach, 
+         eligibility_criteria, research_design, assignment_level, cluster_type, cluster_size, study_groups,
+         sample_size, grd_schl_level, age_mean_sd, percent_female, percent_race_ethnicity, percent_ELL, percent_FRPL,
+         country_state, urbanicity, school_type, Intervention, Comparison, outcome_list, overall_rob_rating,
+         consort_flow_diagram, study_registration, availability_statement)
+
+#combine all references for a primary study in a single variable, separated by a semicolon
+ps_citations <- ps_allreferences %>% 
+  rename(citation = report) %>% 
+  filter(study %in% inc_ps)
+
+#create a variable that combines all references for a study into one cell
+study_reports <- ps_citations %>% 
+  group_by(study) %>% 
+  summarize(all_reports = paste(citation, collapse = " ; ")) %>% 
+  ungroup() %>% 
+  mutate(all_reports = str_replace_all(all_reports, "; ", "<br><br>")) %>% #\\\\n
+  rename(study_author_year = study)
+
+#extract titles and study names from Zotero .bib
+ps_titles <- bib_ps_df %>% 
+    rowwise() %>% 
+  mutate(author_unlist = paste(lapply(author, paste, collapse = ","), collapse = ", "),
+         author = str_extract(author_unlist, "^[^,]+"),
+         author_year = paste(author, year), 
+         title = str_replace_all(title, "[{}]", ""),
+         title = str_remove(title, "\\.$"),
+         merge_author = stri_trans_general(author_year, "Latin-ASCII"),
+         merge_author = str_to_lower(merge_author)) %>% 
+  arrange(str_to_lower(author_year))
+
+#merge titles with full citation
+study_ref_info <- study_reports %>% 
+  mutate(author_year = str_replace(study_author_year, "(\\d{4}).*", "\\1"),
+         merge_author = stri_trans_general(author_year, "Latin-ASCII"),
+         merge_author = str_to_lower(merge_author)) %>% 
+  select(-author_year) %>% 
+  left_join(ps_titles) %>% 
+  select(title, all_reports, merge_author)
+
+#merge all info for appendix 5 together
+a5 <- a5_rob %>% 
+  mutate(author_year = str_replace(study_author_year, "(\\d{4}).*", "\\1"),
+         merge_author = stri_trans_general(author_year, "Latin-ASCII"),
+         merge_author = str_to_lower(merge_author)) %>% 
+  left_join(study_ref_info, by = "merge_author", multiple = "all") %>% 
+  select(study_author_year, title, study_start_date, study_end_date, recruitment_approach, 
+         eligibility_criteria, research_design, assignment_level, cluster_type, cluster_size, study_groups,
+         sample_size, grd_schl_level, age_mean_sd, percent_female, percent_race_ethnicity, percent_ELL, percent_FRPL,
+         country_state, urbanicity, school_type, Intervention, Comparison, outcome_list, overall_rob_rating,
+         consort_flow_diagram, study_registration, availability_statement, all_reports) %>% 
+  mutate_if(is.numeric, as.character)
+
+
+
+# 
+# #TRY AGAIN
+# #format bib_df
+# bibdf_format <- bib_df %>% 
+#   rowwise() %>% 
+#   mutate(author_unlist = paste(lapply(author, paste, collapse = ","), collapse = ", "),
+#          author = str_extract(author_unlist, "^[^,]+"),
+#          author_year = paste(author, year), 
+#          title = str_replace_all(title, "[{}]", ""),
+#          title = str_remove(title, "\\.$")) %>% 
+#   arrange(str_to_lower(author_year))
+# 
+# ps_author_year <- bibdf_format$author_year
+# ps_title <- bibdf_format$title
+# 
+# # Create a table of the references in APA format
+# apa_refs <- sapply(1:nrow(bibdf_format), function(i) {
+#   # Get the ith reference
+#   ref <- bibdf_format[i, ]
+#   # Format the reference in APA style
+#   ref_string <- paste0(
+#     ref[["author_unlist"]], " (", ref[["year"]], "). ", 
+#     ref[["title"]], ". ", ref[["journal"]], ", ",  
+#     ref[["volume"]], "(", ref[["number"]], "), ", 
+#     ref[["pages"]]
+#   )
+#   # Return the formatted reference
+#   ref_string
+# })
+# 
+# 
+# #as.data,frame
+# aparef_df <- as.data.frame(apa_refs) %>% #MOSTLY IN RIGHT FORMAT - TRY ADDING ITALICS AND INITIALIZE NAMES
+#   mutate(apa_refs = str_replace_all(apa_refs, "\\(NA\\)", ""), 
+#          apa_refs = str_replace_all(apa_refs, "NA", ""),
+#          apa_refs = str_replace_all(apa_refs, "--", "-"),
+#          apa_refs = str_replace_all(apa_refs, ", ,", "")) %>% 
+#   arrange(str_to_lower(apa_refs)) %>% 
+#   cbind(ps_author_year) %>% 
+#   cbind(ps_title) %>% 
+#   rename(study_author_year = ps_author_year)
+#   
+
+```
+
+Create one long data frame that has all information to present in appendix 5 for each study:
+
+```{r a5-longlist}
+#transfer dataframe into list per df
+a5_dflist <- map(1:nrow(a5), ~a5[.x, ])
+
+##transfer to long format
+a5_long <- map(a5_dflist, ~ .x %>% 
+                      pivot_longer(cols = everything(), 
+                                   names_to = "variable", 
+                                   values_to = "value") %>% 
+                      mutate(variable = case_when(variable == "study_author_year" ~ "Study", 
+                                                  variable == "title" ~ "Title",
+                                                  variable == "study_start_date" ~ "Start Date",
+                                                  variable == "study_end_date" ~ "End Date",
+                                                  variable == "recruitment_approach" ~ "Recruitment Approach",
+                                                  variable == "eligibility_criteria" ~ "Eligibility Criteria",
+                                                  variable == "research_design" ~ "Research Design",
+                                                  variable == "assignment_level" ~ "Assignment Level",
+                                                  variable == "cluster_type" ~ "Cluster Type",
+                                                  variable == "cluster_size" ~ "Average Cluster Size",
+                                                  variable == "study_groups" ~ "Trial Arms",
+                                                  variable == "sample_size" ~ "Sample Size",
+                                                  variable == "grd_schl_level" ~ "Grade/School Level",
+                                                  variable == "age_mean_sd" ~ "Age",
+                                                  variable == "percent_female" ~ "Percent Female",
+                                                  variable == "percent_race_ethnicity" ~ "Percent Racce/Ethnicity",
+                                                  variable == "percent_ELL" ~ "Percent ELL",
+                                                  variable == "percent_FRPL" ~ "Percent FRPL",
+                                                  variable == "country_state" ~ "Country (State)",
+                                                  variable == "urbanicity" ~ "Geographic Area",
+                                                  variable == "school_type" ~ "School Type",
+                                                  variable == "Intervention" ~ "Active Intervention",
+                                                  variable == "Comparison" ~ "Comparison Group",
+                                                  variable == "outcome_list" ~ "Outcomes",
+                                                  variable == "overall_rob_rating" ~ "Risk of Bias",
+                                                  variable == "consort_flow_diagram" ~ "Flow Diagram",
+                                                  variable == "study_registration" ~ "Registration", 
+                                                  variable == "availability_statement" ~ "Data/Code Availability",
+                                                  variable == "all_reports" ~ "References",
+                                                  TRUE ~ variable)))
+
+#combine into one single dataframe
+combined_a5 <- bind_rows(a5_long, .id = "source") %>% 
+  mutate(source = as.numeric(source))
+
+```
+
+Create list of tables for each study to present in appendix 5: 
+
+```{r a5-gtlist}
+a5_list_gt <- lapply(split(combined_a5, combined_a5$source), function(x) {
+  gt(x) %>% 
+    cols_hide("source") %>% 
+    cols_label(variable = "",
+               value = "") %>% 
+    cols_width(variable ~ px(175)) %>% 
+    tab_style(style = list(cell_text(weight = "bold")),
+            locations = cells_body(columns = "variable")) %>% 
+    tab_style(style = list(css("text-indent" = "10px")),
+              locations = cells_body(columns = "variable", 
+                                     rows = c(9, 10))) %>% 
+    tab_options(table.font.names = "Times New Roman") %>% 
+    fmt_markdown(rows = nrow(x))
+})
+
+#extract HTML table
+html_code_a5 <- a5_list_gt %>% 
+  map(as_raw_html) %>% 
+  reduce(paste)
+
+#print in document
+htmltools::HTML(html_code_a5)
+
+```
+
+Save appendix 5 to `report/appendices`` project folder: 
+
+```{r a5-save}
+#save as HMTL
+writeLines(html_code_a5, here("report", "appendices", "appendix_5.html"))
+
+```
+
