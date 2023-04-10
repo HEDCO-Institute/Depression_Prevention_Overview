@@ -11,7 +11,7 @@
 
 
 
-<title>Depression Prevention Overview Repository</title>
+<title>README</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -297,23 +297,17 @@ overflow-y: auto;
 border: 1px solid #ddd;
 border-radius: 4px;
 }
-.tabset-dropdown > .nav-tabs > li.active:before {
-content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+content: "\e259";
 font-family: 'Glyphicons Halflings';
 display: inline-block;
 padding: 10px;
 border-right: 1px solid #ddd;
 }
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-content: "";
-border: none;
-}
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-content: "";
+content: "\e258";
 font-family: 'Glyphicons Halflings';
-display: inline-block;
-padding: 10px;
-border-right: 1px solid #ddd;
+border: none;
 }
 .tabset-dropdown > .nav-tabs > li.active {
 display: block;
@@ -354,28 +348,27 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">Depression Prevention Overview
-Repository</h1>
 
 </div>
 
 
+<div id="depression-prevention-overview-repository" class="section level2">
+<h2>Depression Prevention Overview Repository</h2>
 <p>This repository contains the data and R code to reproduce the results
 of our Depression Prevention Overview titled “School Based Interventions
 for Primary and Secondary Prevention of Depression: An Overview of
 Systematic Reviews with Meta-Analyses.” <br> Additional materials,
-including the protocol, <strong>codebook</strong>, and
-<strong>report</strong> are available at <a href="https://osf.io/c7nyz/" class="uri">https://osf.io/c7nyz/</a>.</p>
+including the protocol, study materials, and dissemination products are
+available at <a href="https://osf.io/c7nyz/" class="uri">https://osf.io/c7nyz/</a>.</p>
+</div>
 <div id="computational-environment" class="section level2">
 <h2>Computational Environment</h2>
-<!-- Plan to eventually create and include docker images to reproduce environment-->
 <p>All of our analyses were ran on a Windows 10 Enterprise platform
 (x86_64-w64-mingw32/x64). <br> Our analyses were conducted in R (version
-4.2.2) and are reported in Rmarkdown files (version 2.14) <br> We use a
+4.2.2) and are reported in Rmarkdown files (version 2.20) <br> We use a
 variety of R packages that need to be installed. Code to install and
 load all required packages are included in the beginning of the coding
-scripts. See below for the full list of required packages (and version
-used):</p>
+scripts. See below for the full list of packages and versions used:</p>
 <ul>
 <li><code>pacman</code> (0.5.1)</li>
 <li><code>devtools</code> (2.4.5)</li>
@@ -386,16 +379,24 @@ used):</p>
 <li><code>openxlsx</code> (4.2.5)</li>
 <li><code>robumeta</code> (2.0)</li>
 <li><code>metafor</code> (3.8-1)</li>
+<li><code>lubridate</code> (1.8.0)</li>
+<li><code>gt</code> (0.8.0.9000)</li>
+<li><code>webshot2</code> (0.1.0)</li>
+<li><code>DiagrammeR</code> (1.0.9)</li>
+<li><code>prismadiagramR</code> (1.0.0)</li>
+<li><code>stringi</code> (1.7.6)</li>
+<li><code>htmltools</code> (0.5.4)</li>
+<li><code>bibdf</code> (1.1.1)</li>
 <li><code>ccaR</code> (0.1.0)</li>
 <li><code>robvis</code> (0.3.0.900)</li>
 </ul>
 </div>
 <div id="data" class="section level2">
 <h2>Data</h2>
-<p>The excel data and codebook for this overview are publicly available
-at <a href="https://osf.io/c7nyz/" class="uri">https://osf.io/c7nyz/</a>. All data files are included in
-the data folder of this repository. See below for a description of each
-data file: <br> <br></p>
+<p>The excel data and metadata for this overview are included in the
+<code>data</code> folder of this repository. All data files are also
+publicly available at <a href="https://osf.io/c7nyz/" class="uri">https://osf.io/c7nyz/</a>. See below for a description of
+each data file: <br> <br></p>
 <div id="review-level-data" class="section level4">
 <h4>Review Level Data:</h4>
 <table>
@@ -415,25 +416,37 @@ data file: <br> <br></p>
 </thead>
 <tbody>
 <tr class="odd">
-<td>Depression_Overview_FileMaker_Data.xlsx</td>
+<td><code>Depression_Overview_Search_Data.xlsx</code></td>
+<td align="center">metadata</td>
+<td>Metadata for this file, including variable descriptions</td>
+<td>One row per variable</td>
+</tr>
+<tr class="even">
+<td><code>Depression_Overview_Search_Data.xlsx</code></td>
 <td align="center">reference_level</td>
 <td>Abstract and full-text screening decisions</td>
 <td>One row per reference ID (citation)</td>
 </tr>
+<tr class="odd">
+<td><code>Depression_Overview_Review_Data.xlsx</code></td>
+<td align="center">metadata</td>
+<td>Metadata for this file, including variable descriptions</td>
+<td>One row per variable</td>
+</tr>
 <tr class="even">
-<td>Depression_Overview_FileMaker_Data.xlsx</td>
+<td><code>Depression_Overview_Review_Data.xlsx</code></td>
 <td align="center">review_level</td>
 <td>Extracted descriptive data on eligible reviews</td>
 <td>One row per review ID (systematic review)</td>
 </tr>
 <tr class="odd">
-<td>Depression_Overview_FileMaker_Data.xlsx</td>
+<td><code>Depression_Overview_Review_Data.xlsx</code></td>
 <td align="center">amstar</td>
-<td>AMSTAR risk of bias assessment</td>
+<td>AMSTAR study quality assessment</td>
 <td>One row per review ID</td>
 </tr>
 <tr class="even">
-<td>Depression_Overview_FileMaker_Data.xlsx</td>
+<td><code>Depression_Overview_Review_Data.xlsx</code></td>
 <td align="center">robis</td>
 <td>ROBIS risk of bias assessment</td>
 <td>One row per review ID</td>
@@ -461,114 +474,132 @@ data file: <br> <br></p>
 </thead>
 <tbody>
 <tr class="odd">
-<td>Eligibility_Data.xlsx</td>
-<td align="center">Eligibility_Decisions</td>
-<td>Abstract and full-text screening decisions</td>
-<td>One row per study ID (primary study)</td>
+<td><code>Depression_Overview_Eligibility_Data.xlsx</code></td>
+<td align="center">metadata</td>
+<td>Metadata for this file, including variable descriptions</td>
+<td>One row per variable</td>
 </tr>
 <tr class="even">
-<td>Eligibility_Data.xlsx</td>
-<td align="center">Reports</td>
+<td><code>Depression_Overview_Eligibility_Data.xlsx</code></td>
+<td align="center">reports</td>
 <td>Citations associated with each study ID for tracking multiple
 reports</td>
-<td>One row per primary study reference</td>
+<td>One row per primary study citation</td>
 </tr>
 <tr class="odd">
-<td>Eligibility_Data.xlsx</td>
-<td align="center">Citation_Matrix</td>
+<td><code>Depression_Overview_Eligibility_Data.xlsx</code></td>
+<td align="center">citation_matrix</td>
 <td>Primary study overlap across reviews</td>
-<td>One row per study ID; columns are review IDs</td>
+<td>One row per primary study; columns are review IDs</td>
 </tr>
 <tr class="even">
-<td>Depression_Overview_FileMaker_Data.xlsx</td>
+<td><code>Depression_Overview_Eligibility_Data.xlsx</code></td>
+<td align="center">eligibility_decisions</td>
+<td>Abstract and full-text screening decisions</td>
+<td>One row per primary study</td>
+</tr>
+<tr class="odd">
+<td><code>Depression_Overview_Primary_Study_Data.xlsx</code></td>
+<td align="center">metadata</td>
+<td>Metadata for this file, including variable descriptions</td>
+<td>One row per variable</td>
+</tr>
+<tr class="even">
+<td><code>Depression_Overview_Primary_Study_Data.xlsx</code></td>
 <td align="center">study_level</td>
 <td>Extracted descriptive data on eligible primary studies</td>
-<td>One row per study ID</td>
+<td>One row per study ID (primary study)</td>
 </tr>
 <tr class="odd">
-<td>Depression_Overview_FileMaker_Data.xlsx</td>
+<td><code>Depression_Overview_Primary_Study_Data.xlsx</code></td>
 <td align="center">iROB</td>
 <td>Risk of bias assessment for individual RCTs</td>
-<td>One row per study ID</td>
+<td>One row per applicable study ID</td>
 </tr>
 <tr class="even">
-<td>Depression_Overview_FileMaker_Data.xlsx</td>
+<td><code>Depression_Overview_Primary_Study_Data.xlsx</code></td>
 <td align="center">cROB</td>
 <td>Risk of bias assessment for cluster RCTs</td>
-<td>One row per study ID</td>
+<td>One row per applicable study ID</td>
 </tr>
 <tr class="odd">
-<td>Depression_Overview_FileMaker_Data.xlsx</td>
+<td><code>Depression_Overview_Primary_Study_Data.xlsx</code></td>
 <td align="center">ROBINS-I</td>
 <td>Risk of bias assessment for non-randomized studies</td>
-<td>One row per study ID</td>
+<td>One row per applicable study ID</td>
 </tr>
 <tr class="even">
-<td>Depression_Overview_FileMaker_Data.xlsx</td>
+<td><code>Depression_Overview_Primary_Study_Data.xlsx</code></td>
 <td align="center">group_level</td>
 <td>Extracted descriptive data for each study group</td>
 <td>One row per user-created group ID</td>
 </tr>
 <tr class="odd">
-<td>Depression_Overview_FileMaker_Data.xlsx</td>
+<td><code>Depression_Overview_Primary_Study_Data.xlsx</code></td>
 <td align="center">outcome_level</td>
 <td>Extracted descriptive data for each outcome of interest</td>
 <td>One row per user-created outcome ID</td>
 </tr>
 <tr class="even">
-<td>Depression_Overview_FileMaker_Data.xlsx</td>
+<td><code>Depression_Overview_Primary_Study_Data.xlsx</code></td>
 <td align="center">effect_level</td>
 <td>Extracted effect size data for each group comparison and outcome
 combination</td>
 <td>One row per user-created effect size ID</td>
 </tr>
 <tr class="odd">
-<td>Depression_Overview_Meta_Analysis.xlsx</td>
+<td><code>Depression_Overview_Meta_Analysis_Data.xlsx</code></td>
+<td align="center">metadata</td>
+<td>Metadata for this file, including variable descriptions</td>
+<td>One row per variable</td>
+</tr>
+<tr class="even">
+<td><code>Depression_Overview_Meta_Analysis_Data.xlsx</code></td>
 <td align="center">Depression Diagnosis</td>
 <td>Effect size data for depression diagnosis meta-analysis</td>
-<td><strong>One row per follow-up effect size</strong></td>
+<td>One row per effect size</td>
 </tr>
-<tr class="even">
-<td>Depression_Overview_Meta_Analysis.xlsx</td>
+<tr class="odd">
+<td><code>Depression_Overview_Meta_Analysis_Data.xlsx</code></td>
 <td align="center">Depression Symptoms</td>
 <td>Effect size data for depression symptoms meta-analysis</td>
-<td><strong>One row per follow-up effect size</strong></td>
+<td>One row per effect size</td>
 </tr>
-<tr class="odd">
-<td>Depression_Overview_Meta_Analysis.xlsx</td>
+<tr class="even">
+<td><code>Depression_Overview_Meta_Analysis_Data.xlsx</code></td>
 <td align="center">Anxiety</td>
 <td>Effect size data for anxiety meta-analysis</td>
-<td><strong>One row per follow-up effect size</strong></td>
+<td>One row per follow-up effect size</td>
 </tr>
-<tr class="even">
-<td>Depression_Overview_Meta_Analysis.xlsx</td>
+<tr class="odd">
+<td><code>Depression_Overview_Meta_Analysis_Data.xlsx</code></td>
 <td align="center">Educational Achievement</td>
 <td>Effect size data for educational achievement meta-analysis</td>
-<td><strong>One row per follow-up effect size</strong></td>
+<td>One row per effect size</td>
 </tr>
-<tr class="odd">
-<td>Depression_Overview_Meta_Analysis.xlsx</td>
+<tr class="even">
+<td><code>Depression_Overview_Meta_Analysis_Data.xlsx</code></td>
 <td align="center">Self Harm</td>
 <td>Effect size data for self harm meta-analysis</td>
-<td><strong>One row per follow-up effect size</strong></td>
-</tr>
-<tr class="even">
-<td>Depression_Overview_Meta_Analysis.xlsx</td>
-<td align="center">Stress</td>
-<td>Effect size data for stress meta-analysis</td>
-<td><strong>One row per follow-up effect size</strong></td>
+<td>One row per effect size</td>
 </tr>
 <tr class="odd">
-<td>Depression_Overview_Meta_Analysis.xlsx</td>
-<td align="center">Suicidal Ideation</td>
-<td>Effect size data for suicidal ideation meta-analysis</td>
-<td><strong>One row per follow-up effect size</strong></td>
+<td><code>Depression_Overview_Meta_Analysis_Data.xlsx</code></td>
+<td align="center">Stress</td>
+<td>Effect size data for stress meta-analysis</td>
+<td>One row per effect size</td>
 </tr>
 <tr class="even">
-<td>Depression_Overview_Meta_Analysis.xlsx</td>
+<td><code>Depression_Overview_Meta_Analysis_Data.xlsx</code></td>
+<td align="center">Suicidal Ideation</td>
+<td>Effect size data for suicidal ideation meta-analysis</td>
+<td>One row per effect size</td>
+</tr>
+<tr class="odd">
+<td><code>Depression_Overview_Meta_Analysis_Data.xlsx</code></td>
 <td align="center">Well-being</td>
 <td>Effect size data for well-being meta-analysis</td>
-<td><strong>One row per follow-up effect size</strong></td>
+<td>One row per effect size</td>
 </tr>
 </tbody>
 </table>
@@ -579,12 +610,14 @@ combination</td>
 <p>All code necessary to reproduce our findings are included in one main
 Rmarkdown file in the scripts folder:</p>
 <ul>
-<li>Analysis_Script.Rmd</li>
+<li><code>Analysis_Script.Rmd</code></li>
 </ul>
 <p>This file is organized to present results in the order in which they
-appear in our report, “School Based Interventions for Primary and
-Secondary Prevention of Depression: An Overview of Systematic Reviews
-with Meta-Analyses,” with corresponding section headers.</p>
+appear in our technical report, “School Based Interventions for Primary
+and Secondary Prevention of Depression: An Overview of Systematic
+Reviews with Meta-Analyses,” with corresponding section headers. There
+are also embedded comments and contextual information to help the user
+understand analysis steps and code chunks.</p>
 </div>
 <div id="replication-steps" class="section level2">
 <h2>Replication Steps</h2>
@@ -594,7 +627,7 @@ GitHub account:</strong></p>
 <ol style="list-style-type: decimal">
 <li>Clone this repository to your local machine (<a href="https://book.cds101.com/using-rstudio-server-to-clone-a-github-repo-as-a-new-project.html#step---2">click
 for help</a>)</li>
-<li>Run Analysis_Script.Rmd</li>
+<li>Run <code>Analysis_Script.Rmd</code></li>
 </ol>
 <p><strong>If you need to install or connect R, Rstudio, Git, and/or
 GitHub:</strong></p>
@@ -615,23 +648,31 @@ may use the following steps:</strong></p>
 <ol style="list-style-type: decimal">
 <li>Create an R project on your local machine (<a href="https://rpubs.com/Dee_Chiluiza/create_RProject">click for
 help</a>)</li>
-<li>Create the following folders in your R project root directory: data,
-scripts</li>
+<li>Create the following folders in your R project root directory:
+<code>data</code>, <code>scripts</code></li>
 <li>Download all data files listed above from the repository and put
-them in the data folder you created</li>
-<li>Download the Analysis_Script.Rmd listed above from the repository
-and put it in the scripts folder you created</li>
-<li>Run Analysis_Script.Rmd</li>
+them in the <code>data</code> folder you created</li>
+<li>Download the <code>Analysis_Script.Rmd</code> listed above from the
+repository and put it in the <code>scripts</code> folder you
+created</li>
+<li>Run <code>Analysis_Script.Rmd</code></li>
 </ol>
-<!-- ## Additional Information-->
-<!-- anything from SSDA guidance? IF ANY NOT MENTIONED ABOVE-->
-<!-- TABLES AND FIGURES SECTION, and add report folder to replication steps-->
-<!-- Plan to eventually create and include docker images to reproduce environment-->
+</div>
+<div id="tables-figures-and-appendices" class="section level2">
+<h2>Tables, Figures, and Appendices</h2>
+<p>All tables, figures, and appendices are located in the
+<code>report</code> folder of the repository in their respective
+sub-folders. All tables, figures, and appendices can be reproduced in
+HTML by running the <code>Analysis_Script.Rmd</code> file. Please note:
+if you do run the <code>Analysis_Script.Rmd</code>, it will export the
+HTML tables, figures, and appendices to the correct sub-folder in the
+<code>report</code> folder of the project directory. You can always find
+our versions of the tables, figures, and appendices in this repo.</p>
 </div>
 <div id="contact" class="section level2">
 <h2>Contact</h2>
 <p>If you have any questions, concerns, or feedback, feel free to email
-Shaina Trevino at <a href="mailto:strevino@uoregon.edu" class="email">strevino@uoregon.edu</a></p>
+Shaina Trevino at <a href="mailto:strevino@uoregon.edu">strevino@uoregon.edu</a></p>
 </div>
 
 
