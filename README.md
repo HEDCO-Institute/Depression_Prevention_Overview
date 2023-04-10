@@ -31,7 +31,7 @@ We use a variety of R packages that need to be installed. Code to install and lo
 
 ## Data
 
-The excel data and metadata for this overview are included in the `data` folder of this repository. All data files are also publicly available at <https://osf.io/c7nyz/>. See below for a description of each data file:  <br>
+The excel data and metadata for this overview are included in the `data` folder of this repository. All data files are also publicly available at <https://osf.io/c7nyz/>. The value `-999` indicates a missing value that was not extracted for all data files. See below for a description of each data file:  <br>
 <br>
 
 #### Review Level Data:
