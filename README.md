@@ -44,6 +44,7 @@ The excel data and metadata for this overview are included in the `data` folder 
 | `Depression_Overview_Review_Data.xlsx` | review_level | Extracted descriptive data on eligible reviews | One row per review ID (systematic review)|
 | `Depression_Overview_Review_Data.xlsx` | amstar| AMSTAR study quality assessment | One row per review ID |
 | `Depression_Overview_Review_Data.xlsx` | robis | ROBIS risk of bias assessment | One row per review ID |
+| `included_reviews.bib` | NA | Bibliography for included systematic reviews exported from Zotero | One entry per review (main citation when multiple reports) |
 <br>
 
 #### Primary Study Level Data:
@@ -71,6 +72,7 @@ The excel data and metadata for this overview are included in the `data` folder 
 | `Depression_Overview_Meta_Analysis_Data.xlsx` | Stress | Effect size data for stress meta-analysis | One row per effect size |
 | `Depression_Overview_Meta_Analysis_Data.xlsx` | Suicidal Ideation | Effect size data for suicidal ideation meta-analysis | One row per effect size |
 | `Depression_Overview_Meta_Analysis_Data.xlsx` | Well-being | Effect size data for well-being meta-analysis | One row per effect size | 
+| `included_studies.bib` | NA | Bibliography for included primary studies exported from Zotero | One entry per primary study (main citation when multiple reports) |
 
 ## Code
 
