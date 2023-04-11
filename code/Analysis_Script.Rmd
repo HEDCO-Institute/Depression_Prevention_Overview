@@ -8,8 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 #install and load pacman package
-install.packages("pacman", repos = "http://cran.us.r-project.org")
-library(pacman)
+if (!require("pacman")) install.packages("pacman")
 
 #install and load required packages
 p_load(devtools, here, readxl, janitor, tidyverse, openxlsx, robumeta, metafor, lubridate, gt, webshot2, DiagrammeR, prismadiagramR, stringi, htmltools, bib2df) 
