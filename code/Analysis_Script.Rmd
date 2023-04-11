@@ -2346,7 +2346,7 @@ print(table1_formatted)
 
 ```
 
-Save table 1 to `report/tables`` project folder: 
+Save table 1 to `outputs/tables`` project folder: 
 
 ```{r t1-save}
 #save as word doc
@@ -2359,7 +2359,7 @@ Save table 1 to `report/tables`` project folder:
 table1_html <- table1_formatted %>% 
   cols_width(review_author_year ~ px(175), databases_searched ~ px(700), search_date_format ~ px(150), starts_with("n") ~ px(75))
 
-gtsave(table1_html, filename = "table_1.html", path = here("report", "tables"))
+gtsave(table1_html, filename = "table_1.html", path = here("outputs", "tables"))
 
 ```
 
@@ -2421,11 +2421,11 @@ print(t2_formatted)
 
 ```
 
-Save table 2 to `report/tables`` project folder: 
+Save table 2 to `outputs/tables`` project folder: 
 
 ```{r save-t2}
 #save as HTML
-gtsave(t2_formatted, filename = "table_2.html", path = here("report", "tables"))
+gtsave(t2_formatted, filename = "table_2.html", path = here("outputs", "tables"))
 
 #save as word doc
 #gtsave(t2_formatted, filename = "table2_word.docx")
@@ -2496,11 +2496,11 @@ print(t3_formatted)
 
 ```
 
-Save table 3 to `report/tables`` project folder: 
+Save table 3 to `outputs/tables`` project folder: 
 
 ```{r t3-save}
 #save as html
-gtsave(t3_formatted, filename = "table_3.html", path = here("report", "tables"))
+gtsave(t3_formatted, filename = "table_3.html", path = here("outputs", "tables"))
 
 #save as word doc
 #gtsave(t3_formatted, filename = "table3_word.docx")
@@ -2632,11 +2632,11 @@ print(t4_formatted)
 
 ```
 
-Save table 3 to `report/tables`` project folder: 
+Save table 3 to `outputs/tables`` project folder: 
 
 ```{r t3-save}
 #save as html
-gtsave(t4_formatted, filename = "table_4.html", path = here("report", "tables"))
+gtsave(t4_formatted, filename = "table_4.html", path = here("outputs", "tables"))
 
 ```
 
@@ -2795,12 +2795,12 @@ f1_viz <- grViz(f1)
 f1_viz
 ```
 
-Save figure 1 to `report/figures` project folder: 
+Save figure 1 to `outputs/figures` project folder: 
 
 ```{r save-f1}
 #save figure 1
 htmlwidgets::saveWidget(f1_viz, "temp.html")
-webshot("temp.html", here("report", "figures", "figure1_prisma.png"))
+webshot("temp.html", here("outputs", "figures", "figure1_prisma.png"))
 file.remove("temp.html")
 
 ```
@@ -2836,11 +2836,11 @@ f2
 
 ```
 
-Save figure 2 to `report/figures` project folder: 
+Save figure 2 to `outputs/figures` project folder: 
 
 ```{r save-f2}
 #set image dimensions and file path to save
-png(here("report", "figures", "figure2_heatmap.png"), width = 1000, height = 1000)
+png(here("outputs", "figures", "figure2_heatmap.png"), width = 1000, height = 1000)
 
 #show plot
 f2
@@ -2881,11 +2881,11 @@ print(f3)
 
 ```
 
-Save figure 3 to `report/figures` project folder: 
+Save figure 3 to `outputs/figures` project folder: 
 
 ```{r save-f3}
 #set image dimensions and file path to save
-png(here("report", "figures", "figure3_heatmap.png"), width = 1000, height = 1000)
+png(here("outputs", "figures", "figure3_heatmap.png"), width = 1000, height = 1000)
 
 #show plot
 f3
@@ -2908,7 +2908,7 @@ Save forest plot as pdf with specified page dimensions:
 
 ```{r f4-forestplot}
 #set page dimensions and file path to save
-pdf(here("report", "figures", "figure4_forestplot.pdf"), width = 20, height = 15)
+pdf(here("outputs", "figures", "figure4_forestplot.pdf"), width = 20, height = 15)
 
 #forest plot to save
 forest.robu(dd_intercept, es.lab = "outcome_measure", study.lab = "study", "Follow-up" = outcome_timepoint, "Intervention" = intervention)
@@ -2992,14 +2992,14 @@ print(a1_formatted)
 
 ```
 
-Save appendix 1 to `report/appendices`` project folder: 
+Save appendix 1 to `outputs/appendices`` project folder: 
 
 ```{r save-a1}
 #save as word
 #gtsave(a1_formatted, filename = "appendix1.docx")
 
 #save as html
-gtsave(a1_formatted, filename = "appendix_1.html", path = here("report", "appendices"))
+gtsave(a1_formatted, filename = "appendix_1.html", path = here("outputs", "appendices"))
 
 #save as pdf
 #gtsave(a1_formatted, filename = "appendix1_pdf.pdf")
@@ -3067,14 +3067,14 @@ print(a2_formatted)
 
 ```
 
-Save appendix 2 to `report/appendices`` project folder: 
+Save appendix 2 to `outputs/appendices`` project folder: 
 
 ```{r a2-save}
 #save as word
 #gtsave(a2_formatted, filename = "appendix2.docx")
 
 #save as html
-gtsave(a2_formatted, filename = "appendix_2.html", path = here("report", "appendices"))
+gtsave(a2_formatted, filename = "appendix_2.html", path = here("outputs", "appendices"))
 
 #save as pdf
 #gtsave(a2_formatted, filename = "appendix2_pdf.pdf")
@@ -3136,14 +3136,14 @@ print(a3_formatted)
 
 ```
 
-Save appendix 3 to `report/appendices`` project folder: 
+Save appendix 3 to `outputs/appendices`` project folder: 
 
 ```{r a3-save}
 # #save as word
 # gtsave(a3_formatted, filename = "appendix3.docx")
 
 #save as html
-gtsave(a3_formatted, filename = "appendix_3.html", path = here("report", "appendices"))
+gtsave(a3_formatted, filename = "appendix_3.html", path = here("outputs", "appendices"))
 
 # #save as html
 # gtsave(a3_formatted, filename = "appendix3_pdf.pdf")
@@ -3274,11 +3274,11 @@ htmltools::HTML(html_code)
 
 ```
 
-Save appendix 4 to `report/appendices`` project folder: 
+Save appendix 4 to `outputs/appendices`` project folder: 
 
 ```{r a4-save}
 #save as HMTL
-writeLines(html_code, here("report", "appendices", "appendix_4.html"))
+writeLines(html_code, here("outputs", "appendices", "appendix_4.html"))
 
 ```
 
@@ -3509,11 +3509,11 @@ htmltools::HTML(html_code_a5)
 
 ```
 
-Save appendix 5 to `report/appendices`` project folder: 
+Save appendix 5 to `outputs/appendices`` project folder: 
 
 ```{r a5-save}
 #save as HMTL
-writeLines(html_code_a5, here("report", "appendices", "appendix_5.html"))
+writeLines(html_code_a5, here("outputs", "appendices", "appendix_5.html"))
 
 ```
 
