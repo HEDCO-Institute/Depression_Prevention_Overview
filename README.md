@@ -76,7 +76,7 @@ The excel data and metadata for this overview are included in the `data` folder 
 
 ## Code
 
-All code necessary to reproduce our findings are included in one main Rmarkdown file in the scripts folder: 
+All code necessary to reproduce our findings are included in one main Rmarkdown file in the `code` folder: 
 
 - `Analysis_Script.Rmd`
 
@@ -89,7 +89,7 @@ To replicate our results:
 **If you have Rstudio and Git installed and connected to your GitHub account:**
 
 1. Clone this repository to your local machine ([click for help](https://book.cds101.com/using-rstudio-server-to-clone-a-github-repo-as-a-new-project.html#step---2))
-1. Run `Analysis_Script.Rmd`
+1. Run `Analysis_Script.Rmd` in the `code` folder
 
 **If you need to install or connect R, Rstudio, Git, and/or GitHub:**
 
@@ -102,14 +102,14 @@ To replicate our results:
 **To reproduce our results without using Git and GitHub, you may use the following steps:** 
 
 1. Create an R project on your local machine ([click for help](https://rpubs.com/Dee_Chiluiza/create_RProject))
-1. Create the following folders in your R project root directory: `data`, `scripts`
+1. Create the following folders in your R project root directory: `data`, `code`
 1. Download all data files listed above from the repository and put them in the `data` folder you created
-1. Download the `Analysis_Script.Rmd` listed above from the repository and put it in the `scripts` folder you created
+1. Download the `Analysis_Script.Rmd` listed above from the repository and put it in the `code` folder you created
 1. Run `Analysis_Script.Rmd`
 
 ## Tables, Figures, and Appendices
 
-All tables, figures, and appendices are located in the `report` folder of the repository in their respective sub-folders. All tables, figures, and appendices can be reproduced in HTML by running the `Analysis_Script.Rmd` file. Please note: if you do run the `Analysis_Script.Rmd`, it will export the HTML tables, figures, and appendices to the correct sub-folder in the `report` folder of the project directory. You can always find our versions of the tables, figures, and appendices in this repo.
+All tables, figures, and appendices are located in the `outputs` folder of the repository in their respective sub-folders. All tables, figures, and appendices can be reproduced in HTML by running the `Analysis_Script.Rmd` file. Please note: if you do run the `Analysis_Script.Rmd`, it will export the HTML tables, figures, and appendices to the correct sub-folder in the `outputs` folder of the project directory. You can always find our versions of the tables, figures, and appendices in this repo.
 
 ## Contact
 
