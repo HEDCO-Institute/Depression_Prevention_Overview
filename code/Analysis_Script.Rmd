@@ -2412,7 +2412,7 @@ t2_formatted <- t2 %>%
   tab_style(style = cell_text(align = "left"), locations = cells_body(columns = "review_author_year")) %>% 
   tab_footnote(footnote = "N = No; PY = Partial Yes; Y = Yes; CL = Critically Low; L = Low; M = Moderate; H = High") %>% 
   data_color(columns = 2:18,
-             fn = scales::col_factor(palette = c("#ab1d1a", "#8ace7e", "#e03531", "#ffda66", "#e03531", "#b2dfa8", "#8ace7e"),
+             colors = scales::col_factor(palette = c("#ab1d1a", "#8ace7e", "#e03531", "#ffda66", "#e03531", "#b2dfa8", "#8ace7e"),
                                          domain = c("CL", "H", "L", "M", "N", "PY", "Y")))
              
           
@@ -3516,3 +3516,22 @@ writeLines(html_code_a5, here("outputs", "appendices", "appendix_5.html"))
 
 ```
 
+
+```{r exportRDS}
+#Export gt tables and appendices as RDS object to print in technical report
+
+#Combine all gt tables into a list
+tables_list <- list(table1 = table1_formatted,
+                    table2 = t2_formatted,
+                    table3 = t3_formatted,
+                    table4 = t4_formatted,
+                    appendix1 = a1_formatted,
+                    appendix2 = a2_formatted,
+                    appendix3 = a3_formatted,
+                    appendix4 = combined_a4,
+                    appendix5 = combined_a5)
+
+#Save as RDS object to data directory
+saveRDS(tables_list, file = "data/tables_list.rds")
+
+```
