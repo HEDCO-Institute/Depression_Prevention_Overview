@@ -1,0 +1,80 @@
+# Tables
+
+```{r tab_path, include = FALSE}
+library(tidyverse)
+library(gt)
+
+table_list <- readRDS("images/tables_list.rds")
+
+```
+
+## Table 1. Characteristics of Included Systematic Reviews
+
+
+```{r table1, echo = FALSE, results = 'asis'}
+#import from rds
+table1 <- table_list$table1 %>% 
+  cols_width(review_author_year ~ px(125), 
+             databases_searched ~ px(300), 
+             search_date_format ~ px(150), 
+             starts_with("n") ~ px(80))
+
+print(table1)
+
+```
+
+
+## Table 2. Methodological Quality of Included Systematic Reviews (AMSTAR-2)
+
+```{r table2, echo = FALSE, results = 'asis'}
+#import from rds
+table2 <- table_list$table2 %>% 
+  cols_width(review_author_year ~ px(155),
+             amstar_confidence_rating ~ px(67),
+             everything() ~ px(33))
+
+print(table2)
+
+```
+
+
+## Table 3. Risk of Bias in Included Systematic Reviews (ROBIS)
+
+
+```{r table3, echo = FALSE, results = 'asis'}
+#import from rds
+table3 <- table_list$table3 %>% 
+  cols_width(review_author_year ~ px(140),
+              robis_overall_a ~ px(100),
+              robis_overall_b ~ px(80),
+              robis_overall_c ~ px(80),
+              everything() ~ px(72),
+              robis_overall_rating ~ px(20)) %>% 
+  tab_style(style = list(cell_text(weight = "bold", size = px(13))),
+            locations = cells_column_labels()) %>% 
+  tab_style(style = list(cell_text(size = px(13))),
+            locations = cells_body(columns = everything())) 
+
+print(table3)
+
+```
+
+
+## Table 4. Characteristics of Included Primary Studies
+
+```{r table4, echo = FALSE, results = 'asis'}
+#import from rds
+table4 <- table_list$table4 %>% 
+  tab_style(style = list(cell_text(weight = "bold", size = px(12))),
+            locations = cells_column_labels()) %>% 
+  tab_style(style = list(cell_text(size = px(12))),
+            locations = cells_body(columns = everything()))
+# %>% 
+#   cols_width(study_author_year,
+#              country ~ px())
+
+print(table4)
+
+```
+
+
