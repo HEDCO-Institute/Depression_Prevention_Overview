@@ -2985,7 +2985,10 @@ a1_formatted <- a1 %>%
               heading.border.bottom.color = "black",
               table_body.hlines.color = "white",
               table.border.bottom.color = "white",
-              table.font.names = "Times New Roman")
+              table.font.names = "Times New Roman") %>% 
+  tab_header(title = md("**<div style='text-align: center;'>Appendix 1</div>**<div style='text-align: center; margin-top:10px; margin-bottom:20px;'>**List of Reviews Excluded at Full-Text Eligibility Assessment**<br></div>")) %>% 
+  tab_style(style = list(cell_text(align = "center")),
+            locations = cells_title(groups = "title"))
 
 print(a1_formatted)
 
@@ -3060,7 +3063,10 @@ a2_formatted <- a2 %>%
               heading.border.bottom.color = "black",
               table_body.hlines.color = "white",
               table.border.bottom.color = "white",
-              table.font.names = "Times New Roman")
+              table.font.names = "Times New Roman") %>% 
+  tab_header(title = md("**<div style='text-align: center;'>Appendix 2</div>**<div style='text-align: center; margin-top:10px; margin-bottom:20px;'>**List of Studies Excluded at Full-Text Eligibility Assessment**<br></div>")) %>% 
+  tab_style(style = list(cell_text(align = "center")),
+            locations = cells_title(groups = "title"))
 
 print(a2_formatted)
 
@@ -3128,7 +3134,10 @@ a3_formatted <- a3 %>%
               heading.border.bottom.color = "black",
               table_body.hlines.color = "white",
               table.border.bottom.color = "white",
-              table.font.names = "Times New Roman")
+              table.font.names = "Times New Roman") %>% 
+  tab_header(title = md("**<div style='text-align: center;'>Appendix 3</div>**<div style='text-align: center; margin-top:10px; margin-bottom:20px;'>**List of Studies Awaiting Classification**<br></div>")) %>% 
+  tab_style(style = list(cell_text(align = "center")),
+            locations = cells_title(groups = "title"))
 
 print(a3_formatted)
 
@@ -3260,16 +3269,24 @@ list_gt <- lapply(split(combined_a4, combined_a4$source), function(x) {
     tab_options(table.font.names = "Times New Roman") %>% 
     tab_style(style = cell_text(weight = "bold"), locations = cells_row_groups()) %>% 
     tab_style(style = cell_text(align = "right"), locations = cells_body(columns = "variable", rows = 3:9)) %>%
-    fmt_markdown()
+    fmt_markdown(columns = everything())
 })
+
+#add title
+a4_title_html <- '<h2 style="text-align:center;font-family:Times New Roman;font-size:20px;margin-bottom:5px;margin-top:25px;">
+  <div>Appendix 4</div>
+  <div style="margin-top:10px; margin-bottom:10px;">Characteristics of Included Reviews</div>
+</h2>'
+
 
 #extract HTML code of table
 html_code <- list_gt %>% 
   map(as_raw_html) %>% 
-  reduce(paste)
+  reduce(paste) %>% 
+  paste(a4_title_html, ., sep = "\n")
 
 #print in document
-htmltools::HTML(html_code)
+htmltools::browsable(htmltools::HTML(html_code))
 
 ```
 
@@ -3495,16 +3512,24 @@ a5_list_gt <- lapply(split(combined_a5, combined_a5$source), function(x) {
               locations = cells_body(columns = "variable", 
                                      rows = c(9, 10))) %>% 
     tab_options(table.font.names = "Times New Roman") %>% 
-    fmt_markdown(rows = nrow(x))
+    fmt_markdown(columns = everything())
 })
+
+#add title
+a5_title_html <- '<h2 style="text-align:center;font-family:Times New Roman;font-size:20px;margin-bottom:5px;margin-top:25px;">
+  <div>Appendix 5</div>
+  <div style="margin-top:10px; margin-bottom:10px;">Characteristics of Included Studies</div>
+</h2>'
 
 #extract HTML table
 html_code_a5 <- a5_list_gt %>% 
   map(as_raw_html) %>% 
-  reduce(paste)
+  reduce(paste) %>% 
+  paste(a5_title_html, ., sep = "\n")
 
 #print in document
-htmltools::HTML(html_code_a5)
+htmltools::browsable(htmltools::HTML(html_code_a5))
+
 
 ```
 
