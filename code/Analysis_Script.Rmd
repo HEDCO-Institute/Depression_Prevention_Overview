@@ -3543,16 +3543,16 @@ writeLines(html_code_a5, here("outputs", "appendices", "appendix_5.html"))
 
 
 ```{r exportRDS}
-#Export gt tables and appendices as RDS object to print in technical report
+#Export gt tables and appendices without titles as RDS object to print in technical report
 
 #Combine all gt tables into a list
 tables_list <- list(table1 = table1_formatted,
                     table2 = t2_formatted,
                     table3 = t3_formatted,
                     table4 = t4_formatted,
-                    appendix1 = a1_formatted,
-                    appendix2 = a2_formatted,
-                    appendix3 = a3_formatted,
+                    appendix1 = a1_formatted %>% tab_header(title = NULL, subtitle = NULL),
+                    appendix2 = a2_formatted %>% tab_header(title = NULL, subtitle = NULL),
+                    appendix3 = a3_formatted %>% tab_header(title = NULL, subtitle = NULL),
                     appendix4 = combined_a4,
                     appendix5 = combined_a5)
 
