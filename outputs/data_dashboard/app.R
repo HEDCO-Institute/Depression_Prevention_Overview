@@ -6,14 +6,14 @@ pacman::p_load(tidyverse, rio, here, readxl, shiny, bib2df, stringi, DT, openxls
 
 # Import cleaned app data from shinyapps working directory - to export
 a5_to_export <- import(here("data", "dpo_app_data.xlsx")) %>% 
-  select(-study_years, -age_mean_sd, -Comparison, -research_design, -cluster_level_type) #variables removed via TT feedback 10/2/24
+  select(-study_years, -age_mean_sd, -Comparison, -research_design, -cluster_level_type) %>%  #variables removed via TT feedback 10/2/24
+  relocate(percent_race_ethnicity, percent_ELL, percent_FRPL, percent_female, Intervention, outcome_list, .after = last_col()) #reorder re: TT feedback
   
 # Import cleaned app data - tidied for dashboard
 a5 <- import(here("data", "dpo_app_data.xlsx")) %>% 
   select(-study_years, -age_mean_sd, -Comparison, -research_design, -cluster_level_type) %>% #variables removed via TT feedback 10/2/24
   mutate(linked_title = ifelse(!is.na(link_text), paste0("<a href='", link_text, "' target='_blank'>", title, "</a>"), title),
          linked_author = ifelse(!is.na(link_corr_author), paste0("<a href='", link_corr_author, "' target='_blank'>", study_author_name, "</a>"), study_author_name)) %>% 
-  select(-title, -study_author_name, -link_text, -link_corr_author) %>% 
   select(publication_year, linked_title, linked_author, everything()) %>% 
   relocate(percent_race_ethnicity, percent_ELL, percent_FRPL, percent_female, Intervention, outcome_list, .after = last_col()) #reorder re: TT feedback
 
@@ -373,7 +373,7 @@ server <- function(input, output) {
   # Render the filtered dataset as a table ####
   output$table <- DT::renderDT({
     filtered_data <- filtered_dataset() %>% 
-      dplyr::select(-study_author_year, -state, -country, -grade_level, -school_level)
+      dplyr::select(-study_author_year, -state, -country, -grade_level, -school_level, -title, -study_author_name, -link_text, -link_corr_author)
     
     # Check if filtered_data has rows
     if (nrow(filtered_data) > 0) {
@@ -557,24 +557,12 @@ server <- function(input, output) {
   output$downloadData <- downloadHandler(
     filename = "depression_prevention_data.xlsx",
     content = function(file) {
-      cleaned_df_to_export <- a5 %>% 
+      cleaned_df_to_export <- a5_to_export %>% 
         select(-study_author_year, -grade_level:-state)
       
       write.xlsx(cleaned_df_to_export, file)  # all data
     }
   )
-
-  # output$downloadFilteredData <- downloadHandler(
-  #   filename = "4dsw_filtered_data.xlsx",
-  #   content = function(file) {
-  #     filtered_data_export <- filtered_dataset() %>%
-  #     mutate(title_text = str_extract(title, "(?<=>)[^<]+"))
-  #
-  #     colnames(filtered_data_export) <- cap_names
-  #
-  #     write.xlsx(filtered_data_export, file)  # filtered data
-  #   }
-  # )
 
   output$downloadFilteredData <- downloadHandler(
     filename = "depression_filtered_data.xlsx",
@@ -582,11 +570,8 @@ server <- function(input, output) {
       filtered_data <- filtered_dataset()
 
       filtered_data_export <- filtered_data %>%
-        select(-study_author_year, -grade_level:-state) #%>%
-        # rename(title = title_text,
-        #        corr_author_name = author_text,
-        #        link = title_link) %>%
-        # select(publication_year, title, corr_author_name, everything())
+        select(-study_author_year, -grade_level:-state, -linked_title, -linked_author) %>%
+        relocate(link_text, link_corr_author, .after = last_col())
 
       write.xlsx(filtered_data_export, file)  # Write the filtered data
     }
@@ -603,6 +588,6 @@ shinyApp(ui, server)
 
 #### Deploy ####
 #file needs to be .R; files need to be in data_dashboard folder; account needs to be setup
-# library(rsconnect)
-# rsconnect::deployApp(appDir = "outputs/data_dashboard", appName = "depression_data_dashboard")
+#library(rsconnect)
+#rsconnect::deployApp(appDir = "outputs/data_dashboard", appName = "depression_data_dashboard")
 
