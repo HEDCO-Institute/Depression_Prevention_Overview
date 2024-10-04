@@ -429,6 +429,7 @@ server <- function(input, output) {
     updateSelectizeInput(session, "state_filter", selected = character(0))
     updateSelectizeInput(session, "urbanicity_filter", selected = character(0))
     updateSelectizeInput(session, "outcome_filter", selected = character(0))
+    updateSelectizeInput(session, "school_level_filter", selected = character(0))
     #updateSelectizeInput(session, "design_filter", selected = character(0))
     })
 
@@ -552,7 +553,7 @@ server <- function(input, output) {
 
   })
 
-  # TODO: Download buttons ####
+  # Download buttons ####
 
   output$downloadData <- downloadHandler(
     filename = "depression_prevention_data.xlsx",
