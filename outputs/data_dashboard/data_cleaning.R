@@ -381,6 +381,22 @@ a5 <- a5_rob %>%
   #arrange(str_to_lower(stringi::stri_trans_general(study_author_year, "Latin-ASCII")))
   arrange(desc(publication_year))
 
+
+## Update intervention names (10/15/24)
+#import new intervention names
+int_name_df <- import(here("data", "DPO_app_intervention_names.xlsx")) %>% 
+  mutate(merge_author = stri_trans_general(study_author_year, "Latin-ASCII"),
+         merge_author = str_to_lower(merge_author))
+
+a5_updated <- a5 %>%
+  mutate(merge_author = stri_trans_general(study_author_year, "Latin-ASCII"),
+         merge_author = str_to_lower(merge_author)) %>% 
+  left_join(select(int_name_df, Intervention, merge_author, RENAME), 
+            by = c("Intervention", "merge_author")) %>%
+  mutate(Intervention = ifelse(!is.na(RENAME), RENAME, Intervention)) %>%
+  select(-RENAME, -merge_author)
+
+
 # Export cleaned data for use in app
-#export(a5, here("outputs", "data_dashboard", "data", "dpo_app_data.xlsx"))
-#export(a5, here("data", "dpo_app_data.xlsx"))
+# export(a5_updated, here("outputs", "data_dashboard", "data", "dpo_app_data.xlsx"))
+# export(a5_updated, here("data", "dpo_app_data.xlsx"))

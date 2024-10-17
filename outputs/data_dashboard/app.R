@@ -4,13 +4,15 @@ pacman::p_load(tidyverse, rio, here, readxl, shiny, bib2df, stringi, DT, openxls
 
 #### Set-up ####
 
+app_df <- import(here("data", "dpo_app_data.xlsx"))
+
 # Import cleaned app data from shinyapps working directory - to export
-a5_to_export <- import(here("data", "dpo_app_data.xlsx")) %>% 
+a5_to_export <- app_df %>% 
   select(-study_years, -age_mean_sd, -Comparison, -research_design, -cluster_level_type) %>%  #variables removed via TT feedback 10/2/24
   relocate(percent_race_ethnicity, percent_ELL, percent_FRPL, percent_female, Intervention, outcome_list, .after = last_col()) #reorder re: TT feedback
   
 # Import cleaned app data - tidied for dashboard
-a5 <- import(here("data", "dpo_app_data.xlsx")) %>% 
+a5 <- app_df %>% 
   select(-study_years, -age_mean_sd, -Comparison, -research_design, -cluster_level_type) %>% #variables removed via TT feedback 10/2/24
   mutate(linked_title = ifelse(!is.na(link_text), paste0("<a href='", link_text, "' target='_blank'>", title, "</a>"), title),
          linked_author = ifelse(!is.na(link_corr_author), paste0("<a href='", link_corr_author, "' target='_blank'>", study_author_name, "</a>"), study_author_name)) %>% 
@@ -38,7 +40,7 @@ ui <- fluidPage(
              text-align: left;
              padding-left: 10px; 
              font-size: 28px;
-             font-family: "Open Sans", sans-serif;
+             font-family: "Source Sans", sans-serif;
            }
            
            .dt-center.dt-body-center.column-Title {
@@ -197,7 +199,7 @@ ui <- fluidPage(
                        h4("Title:"),
                        p("Title of the article this study is based on. If a link is available, it will link to the full article."),
                        
-                       h4("Corr Author:"),
+                       h4("Corresponding Author:"),
                        p("Author listed in article as corresponding author. If a link is available, it will link to their public website."),
                        
                        h4("Location:"),
@@ -210,8 +212,9 @@ ui <- fluidPage(
                        p("Rural, Suburban, and/or Urban."),
                        
                        h4("School Type"),
-                       p("Type of school (e.g., Charte, Public)."),
+                       p("Type of school (e.g., Charter, Public)."),
                        
+                       h4("Grade/School Level:"),
                        p("Grade level of students / Education level of schools (e.g., Elementary, Primary)."),
                        
                        h4("Sample Size:"),
@@ -221,13 +224,24 @@ ui <- fluidPage(
                        #p("Average or median age with the standard or deviation or range, depending on what was reported in the study."),
                        
                        h4("Intervention:"),
-                       p("Name(s) of the depression prevention intervention studied."),
+                       p("Name(s) of the depression prevention program studied. If a link is available, it will link to the program website. Definitions for generic intervention names are provided below:"),
                        
                        tags$ul(
-                         tags$li(HTML("<strong>UP-A:</strong> Definition")),
-                         tags$li(HTML("<strong>Intervention Name:</strong> Definition")),
-                         tags$li(HTML("<strong>Intervention Name:</strong> Definition")),
-                         tags$li(HTML("<strong>Intervention Name:</strong> Definition"))
+                         tags$li(HTML("<strong>BA Program:</strong> Behavioral Activation program focused on increasing engagement in positive or rewarding activities")),
+                         tags$li(HTML("<strong>CB Group:</strong> Cognitive Behavioral group intervention focused on changing negative thought patterns and behaviors")),
+                         tags$li(HTML("<strong>ER Program:</strong> Emotion Regulation program focused on teaching skills related to identifying, understanding, and managing emotions")),
+                         tags$li(HTML("<strong>Indicated intervention:</strong> An intervention targeting students who show early signs of depression or are at high risk")),
+                         tags$li(HTML("<strong>Mindfulness:</strong> An intervention based on mindfulness techniques")),
+                         tags$li(HTML("<strong>Mindfulness condition:</strong> Mindfulness group training specifically developed for adolescents that integrated elements of MBCT and MBSR")),
+                         tags$li(HTML("<strong>Pamphlet:</strong> A generic intervention delivered via a pamphlet")),
+                         tags$li(HTML("<strong>Peer interaction:</strong> An intervention focused on increasing positive peer interactions")),
+                         tags$li(HTML("<strong>Preventive Curriculum:</strong> Primary prevention health class sessions providing education on the behavioral theory of depression")),
+                         tags$li(HTML("<strong>Prevention Program:</strong> A generic intervention program designed to prevent the onset of depression")),
+                         tags$li(HTML("<strong>Psychoeducational Intervention Program:</strong> An intervention focused on educating students about mental health")),
+                         tags$li(HTML("<strong>Social skills training:</strong> An intervention focused on enhancing interpersonal skills")),
+                         tags$li(HTML("<strong>Treatment Program:</strong> A generic intervention program designed to treat depressive symptoms")),
+                         tags$li(HTML("<strong>Universal intervention:</strong> An intervention offered to all students")),
+                         tags$li(HTML("<strong>Video:</strong> A generic intervention delivered via video"))
                        ),
                        
                       # h4("Comparison:"),
@@ -244,17 +258,19 @@ ui <- fluidPage(
                        h4("Outcome:"),
                        p("Variables researchers reported as outcomes."),
                        
-                       tags$ul(
-                         tags$li(HTML("<strong>Anxiety:</strong> Definition")),
-                         tags$li(HTML("<strong>Depression Diagnosis:</strong> Definition")),
-                         tags$li(HTML("<strong>Depression Symptoms:</strong> Definition")),
-                         tags$li(HTML("<strong>Educational Achievement:</strong> Definition")),
-                         tags$li(HTML("<strong>Self-Harm:</strong> Definition")),
-                         tags$li(HTML("<strong>Stress:</strong> Definition")),
-                         tags$li(HTML("<strong>Substance-Use:</strong> Definition")),
-                         tags$li(HTML("<strong>Subsyndromal Depression:</strong> Definition")),
-                         tags$li(HTML("<strong>Suicidal Ideation:</strong> Definition")),
-                         tags$li(HTML("<strong>Well-being:</strong> Definition"))
+                      tags$ul(
+                        tags$li(HTML("<strong>Anxiety:</strong> A state of excessive worry or fear (symptoms or diagnosis).")),
+                        tags$li(HTML("<strong>Depression Diagnosis:</strong> A formal diagnosis of clinical depression based on established criteria by a mental health professional or cutoff on a validated screening tool.")),
+                        tags$li(HTML("<strong>Depression Symptoms:</strong> Signs of depression, such as persistent sadness, lack of interest, fatigue, and changes in appetite or sleep.")),
+                        tags$li(HTML("<strong>Educational Achievement:</strong> The level of success a person has achieved in their academic or educational pursuits.")),
+                        tags$li(HTML("<strong>Self-Harm:</strong> Intentional injury inflicted on oneself.")),
+                        tags$li(HTML("<strong>Stress:</strong> A physical or emotional response to external pressures or challenges.")),
+                        tags$li(HTML("<strong>Substance-Use:</strong> The consumption of drugs or alcohol.")),
+                        tags$li(HTML("<strong>Subsyndromal Depression:</strong> A set of depressive symptoms that do not meet the full criteria for a clinical depression diagnosis.")),
+                        tags$li(HTML("<strong>Suicidal Ideation:</strong> Thoughts or considerations about taking one's own life.")),
+                        tags$li(HTML("<strong>Well-being:</strong> A general state of health, happiness, and life satisfaction."))
+                      
+                      
                        ),
                        
                        #h4("Design:"),
@@ -382,7 +398,7 @@ server <- function(input, output) {
         filtered_data, 
         escape = FALSE,   # No escaping needed if HTML formatting is used
         rownames = FALSE,
-        colnames = c("Publication Year", "Title", "Corr Author", "Country (State)", 
+        colnames = c("Publication Year", "Title", "Corresponding Author", "Country (State)", 
                      #"Data Years",
                      "Community Type", "School Type", "Grade/School Level", "Sample Size", 
                      "% Race/Ethnicity",  "% ELL", "% FRPL", "% Female",
@@ -520,7 +536,7 @@ server <- function(input, output) {
             rendered_tables_list[[3]]
         ),
         div(class = "table",
-            h3("School Level"),
+            h3("School Level Table"),
             rendered_tables_list[[4]]
         ),
         div(class = "table",
@@ -528,7 +544,7 @@ server <- function(input, output) {
             grade_text_table_render
         ),
         div(class = "table",
-            h3("Publication Year"),
+            h3("Publication Year Tab;e"),
             rendered_tables_list[[1]]
         ),
         div(class = "table",
@@ -589,6 +605,5 @@ shinyApp(ui, server)
 
 #### Deploy ####
 #file needs to be .R; files need to be in data_dashboard folder; account needs to be setup
-#library(rsconnect)
-#rsconnect::deployApp(appDir = "outputs/data_dashboard", appName = "depression_data_dashboard")
+# rsconnect::deployApp(appDir = "outputs/data_dashboard", appName = "depression_data_dashboard")
 
