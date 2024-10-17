@@ -306,7 +306,7 @@ ui <- fluidPage(
 )
 
 #### SERVER #### 
-server <- function(input, output) {
+server <- function(input, output, session) {
   # Create a reactive filtered dataset based on user selections ####
   filtered_dataset <- reactive({
     filtered_data <- a5
