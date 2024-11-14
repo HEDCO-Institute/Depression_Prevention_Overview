@@ -1,6 +1,6 @@
 #install and load packages
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(tidyverse, rio, here, readxl, shiny, bib2df, stringi, DT, openxlsx)
+pacman::p_load(tidyverse, rio, here, readxl, shiny, bib2df, stringi, DT, openxlsx, readxl)
 
 ######################### DATA CLEANING ########################################
 ##Import
@@ -181,6 +181,18 @@ t4_robins <- study_robins %>%
 
 #bind together all rob data for primary studies
 t4_allrob <- rbind(t4_irob, t4_crob, t4_robins)
+
+## Update: adding program links (11/14/2024)
+int_links <- read_excel(here("data", "DPO_app_intervention_names.xlsx"), sheet = "Links") %>% 
+  mutate(
+    # Extract year with optional letter suffix (e.g., 2023a, 2023b)
+    author_year = str_extract(study_author_year, "\\d{4}[a-z]*"),
+    # Normalize author name (remove accents, convert to lowercase)
+    merge_author = stri_trans_general(study_author_year, "Latin-ASCII"),
+    merge_author = str_to_lower(merge_author)
+  ) %>% 
+  select(-author_year)
+
 #select variables needed from group level data
 t4_group <- group_level %>%
   select(primary_study_id, group_number, group_type, gname, ig_group_type,  comparison_type) %>%
@@ -190,12 +202,25 @@ t4_group <- group_level %>%
   select(primary_study_id, study_author_year, everything()) %>%
   arrange(study_author_year)
 
+t4_group <- t4_group %>% 
+  mutate(
+    # Extract year with optional letter suffix (e.g., 2023a, 2023b)
+    author_year = str_extract(study_author_year, "\\d{4}[a-z]*"),
+    # Normalize author name (remove accents, convert to lowercase)
+    merge_author = stri_trans_general(study_author_year, "Latin-ASCII"),
+    merge_author = str_to_lower(merge_author)
+  ) %>% 
+  left_join(int_links %>% select(merge_author, group_number, website_link, clearinghouse_link), by = c("merge_author", "group_number"))
+
 #transform intervention names data to merge
 t4group_intnames <- t4_group %>%
   group_by(study_author_year, group_type) %>%
-  summarize(group_names = paste(gname, collapse = "; ")) %>%
+  summarize(group_names = paste(gname, collapse = "; "),
+            website_links = paste(unique(website_link), collapse = " |~| "),
+            clearinghouse_links = paste(unique(clearinghouse_link), collapse = " |~| ")) %>%
   ungroup() %>%
-  filter(group_type == "Intervention")
+  filter(group_type == "Intervention") %>% 
+  mutate_all(~ na_if(., "NA"))
 
 #transform comparison types data to merge
 t4group_compnames <- t4_group %>%
@@ -311,7 +336,7 @@ a5_rob <- t4_allrob %>%
          sample_size, grd_schl_level, age_mean_sd, percent_female, percent_race_ethnicity, percent_ELL, percent_FRPL,
          country_state, urbanicity, school_type, Intervention, Comparison, outcome_list, overall_rob_rating,
          consort_flow_diagram, study_registration, availability_statement,
-         grade_level, school_level, country, state, study_author_name)
+         grade_level, school_level, country, state, study_author_name, ends_with("links"))
 
 #combine all references for a primary study in a single variable, separated by a semicolon
 ps_citations <- ps_allreferences %>%
@@ -376,7 +401,7 @@ a5 <- a5_rob %>%
          Intervention, Comparison, outcome_list,
          research_design, cluster_level_type,
          percent_female, percent_race_ethnicity, percent_ELL, percent_FRPL,
-         grade_level, school_level, country, state, starts_with("link")) %>%
+         grade_level, school_level, country, state, starts_with("link"), ends_with("links")) %>%
   mutate_if(is.numeric, as.character) %>%
   #arrange(str_to_lower(stringi::stri_trans_general(study_author_year, "Latin-ASCII")))
   arrange(desc(publication_year))

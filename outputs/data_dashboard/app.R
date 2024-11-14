@@ -3,7 +3,45 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(tidyverse, rio, here, readxl, shiny, bib2df, stringi, DT, openxlsx)
 
 #### Set-up ####
+# Functions
+# Function to create HTML links for each intervention
+create_links <- function(interventions, websites, clearinghouses) {
+  # Split the interventions, website links, and clearinghouse links by "; "
+  interventions <- str_split(interventions, "; ")[[1]]
+  websites <- str_split(websites, "; ")[[1]]
+  clearinghouses <- str_split(clearinghouses, "; ")[[1]]
+  
+  # Map each intervention to its corresponding links
+  links <- map2_chr(interventions, seq_along(interventions), function(interv, i) {
+    # Get the website and clearinghouse link for each intervention (if available)
+    website_link <- ifelse(
+      i <= length(websites) && !is.na(websites[i]),
+      paste0("<a href='", websites[i], "' target='_blank'>Website</a>"),
+      "")
+    
+    clearinghouse_link <- ifelse(
+      i <= length(clearinghouses) && !is.na(clearinghouses[i]),
+      paste0("<a href='", clearinghouses[i], "' target='_blank'>Clearinghouse</a>"),
+      "")
+    
+    # Combine the links (separated by " | " if both are available)
+    combined_links <- paste(
+      c(website_link, clearinghouse_link)[nchar(c(website_link, clearinghouse_link)) > 0],
+      collapse = " | ")
+    
+    # Return the formatted intervention with links only if there are links
+    if (nchar(combined_links) > 0) {
+      paste0(interv, " (", combined_links, ")")
+    } else {
+      interv
+    }
+  })
+  
+  # Combine the results with "; " separator
+  paste(links, collapse = "; ")
+}
 
+# Import
 app_df <- import(here("data", "dpo_app_data.xlsx"))
 
 # Import cleaned app data from shinyapps working directory - to export
@@ -15,7 +53,11 @@ a5_to_export <- app_df %>%
 a5 <- app_df %>% 
   select(-study_years, -age_mean_sd, -Comparison, -research_design, -cluster_level_type) %>% #variables removed via TT feedback 10/2/24
   mutate(linked_title = ifelse(!is.na(link_text), paste0("<a href='", link_text, "' target='_blank'>", title, "</a>"), title),
-         linked_author = ifelse(!is.na(link_corr_author), paste0("<a href='", link_corr_author, "' target='_blank'>", study_author_name, "</a>"), study_author_name)) %>% 
+         linked_author = ifelse(!is.na(link_corr_author), paste0("<a href='", link_corr_author, "' target='_blank'>", study_author_name, "</a>"), study_author_name),
+         intervention_links = pmap_chr(list(Intervention, website_links, clearinghouse_links),
+                                       create_links)) %>% 
+  rename(intervention_name = Intervention,
+         Intervention = intervention_links) %>% 
   select(publication_year, linked_title, linked_author, everything()) %>% 
   relocate(percent_race_ethnicity, percent_ELL, percent_FRPL, percent_female, Intervention, outcome_list, .after = last_col()) #reorder re: TT feedback
 
@@ -224,7 +266,7 @@ ui <- fluidPage(
                        #p("Average or median age with the standard or deviation or range, depending on what was reported in the study."),
                        
                        h4("Intervention:"),
-                       p("Name(s) of the depression prevention program studied. If a link is available, it will link to the program website. Definitions for generic intervention names are provided below:"),
+                       p("Name(s) of the depression prevention program studied. If available, name-brand interventions have a clickable link to the program's website and/or clearinghouse page. Definitions for generic intervention names are provided below:"),
                        
                        tags$ul(
                          tags$li(HTML("<strong>BA Program:</strong> Behavioral Activation program focused on increasing engagement in positive or rewarding activities")),
@@ -389,7 +431,8 @@ server <- function(input, output, session) {
   # Render the filtered dataset as a table ####
   output$table <- DT::renderDT({
     filtered_data <- filtered_dataset() %>% 
-      dplyr::select(-study_author_year, -state, -country, -grade_level, -school_level, -title, -study_author_name, -link_text, -link_corr_author)
+      dplyr::select(-study_author_year, -state, -country, -grade_level, -school_level, -title, -study_author_name, -link_text, -link_corr_author,
+                    -intervention_name, -website_links, -clearinghouse_links)
     
     # Check if filtered_data has rows
     if (nrow(filtered_data) > 0) {
@@ -587,8 +630,8 @@ server <- function(input, output, session) {
       filtered_data <- filtered_dataset()
 
       filtered_data_export <- filtered_data %>%
-        select(-study_author_year, -grade_level:-state, -linked_title, -linked_author) %>%
-        relocate(link_text, link_corr_author, .after = last_col())
+        select(-study_author_year, -grade_level:-state, -linked_title, -linked_author, -Intervention) %>%
+        relocate(link_text, link_corr_author, website_links, clearinghouse_links, .after = last_col())
 
       write.xlsx(filtered_data_export, file)  # Write the filtered data
     }
