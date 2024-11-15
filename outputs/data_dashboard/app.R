@@ -6,28 +6,31 @@ pacman::p_load(tidyverse, rio, here, readxl, shiny, bib2df, stringi, DT, openxls
 # Functions
 # Function to create HTML links for each intervention
 create_links <- function(interventions, websites, clearinghouses) {
-  # Split the interventions, website links, and clearinghouse links by "; "
+  # Split the interventions, website links, and clearinghouse links by "; " and " |~| "
   interventions <- str_split(interventions, "; ")[[1]]
-  websites <- str_split(websites, "; ")[[1]]
-  clearinghouses <- str_split(clearinghouses, "; ")[[1]]
+  websites <- str_split(websites, " \\|~\\| ")[[1]]
+  clearinghouses <- str_split(clearinghouses, " \\|~\\| ")[[1]]
   
   # Map each intervention to its corresponding links
   links <- map2_chr(interventions, seq_along(interventions), function(interv, i) {
     # Get the website and clearinghouse link for each intervention (if available)
     website_link <- ifelse(
-      i <= length(websites) && !is.na(websites[i]),
+      i <= length(websites) && !is.na(websites[i]) && websites[i] != "NA",
       paste0("<a href='", websites[i], "' target='_blank'>Website</a>"),
-      "")
+      ""
+    )
     
     clearinghouse_link <- ifelse(
-      i <= length(clearinghouses) && !is.na(clearinghouses[i]),
+      i <= length(clearinghouses) && !is.na(clearinghouses[i]) && clearinghouses[i] != "NA",
       paste0("<a href='", clearinghouses[i], "' target='_blank'>Clearinghouse</a>"),
-      "")
+      ""
+    )
     
     # Combine the links (separated by " | " if both are available)
     combined_links <- paste(
       c(website_link, clearinghouse_link)[nchar(c(website_link, clearinghouse_link)) > 0],
-      collapse = " | ")
+      collapse = " | "
+    )
     
     # Return the formatted intervention with links only if there are links
     if (nchar(combined_links) > 0) {

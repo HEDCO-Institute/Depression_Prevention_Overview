@@ -189,8 +189,7 @@ int_links <- read_excel(here("data", "DPO_app_intervention_names.xlsx"), sheet =
     author_year = str_extract(study_author_year, "\\d{4}[a-z]*"),
     # Normalize author name (remove accents, convert to lowercase)
     merge_author = stri_trans_general(study_author_year, "Latin-ASCII"),
-    merge_author = str_to_lower(merge_author)
-  ) %>% 
+    merge_author = str_to_lower(merge_author)) %>% 
   select(-author_year)
 
 #select variables needed from group level data
@@ -208,8 +207,7 @@ t4_group <- t4_group %>%
     author_year = str_extract(study_author_year, "\\d{4}[a-z]*"),
     # Normalize author name (remove accents, convert to lowercase)
     merge_author = stri_trans_general(study_author_year, "Latin-ASCII"),
-    merge_author = str_to_lower(merge_author)
-  ) %>% 
+    merge_author = str_to_lower(merge_author)) %>% 
   left_join(int_links %>% select(merge_author, group_number, website_link, clearinghouse_link), by = c("merge_author", "group_number"))
 
 #transform intervention names data to merge

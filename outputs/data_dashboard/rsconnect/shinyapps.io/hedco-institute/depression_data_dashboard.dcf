@@ -5,6 +5,6 @@ account: hedco-institute
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 12673204
-bundleId: 9365144
+bundleId: 9365621
 url: https://hedco-institute.shinyapps.io/depression_data_dashboard/
 version: 1
