@@ -75,44 +75,50 @@ community_choices <- sort(unique(trimws(unlist(strsplit(a5$urbanicity[!a5$urbani
 school_choices <- c("Elementary School", "Primary School", "Middle School", "High School", "Secondary School")
 #design_choices <- sort(unique(a5$research_design))
 outcome_choices <- sort(unique(trimws(unlist(strsplit(a5$outcome_list[!a5$outcome_list %in% c("Not reported")], ",")))))
-intervention_choices <- c("Adolescent Coping with Depression",
-                          "Adolescents Copting with Emotions",
-                          "Aussie Optimism",
-                          "Beyondblue",
-                          "Coping Skills Program",
-                          "Coping with Depression",
-                          "Control, Responsibility, Awareness, Impetus, and Confidence",
-                          "DISCOVER",
-                          "Dot be",
-                          "EMOTION",
-                          "Girls in Transition",
-                          "I (Yo), Think (Pienso), Feel (Siento), and Act (Actuo)",
-                          "Interpersonal Psychotherapy-Adolescent Skills Training",
-                          "LARS&LISA",
-                          "Learned Optimism Program",
-                          "MoodGYM",
-                          "Op Volle Kracht",
-                          "SPARX",
-                          "Penn Prevention Program",
-                          "Penn Resiliency Program",
-                          "Positive Thinking Program",
-                          "Positive Thoughts and Actions",
-                          "Problem Solving For Life",
-                          "Resourceful Adolescent Program",
-                          "Teaching Kids to Cope",
-                          "The Little Prince is Depressed",
-                          "Thiswayup",
-                          "Think, Be, Do",
-                          "UK Resilience Programme",
-                          "Unified Protocol for Transdiagnostic Treatment of Emotional Disorders in Adolescents",
-                          "Cognitive-Behavior",
-                          "Emotion Regulation",
-                          "Behavioral Activation",
-                          "Mindfulness",
-                          "Peer Interaction",
-                          "Psychoeducational Intervention",
-                          "Social Skills Training",
-                          "Other Prevention Practice")
+intervention_choices <- list(
+  "Name Brand Interventions" = c(
+    "Adolescent Coping with Depression",
+    "Adolescents Coping with Emotions",
+    "Aussie Optimism",
+    "Beyondblue",
+    "Coping Skills Program",
+    "Coping with Depression",
+    "Control, Responsibility, Awareness, Impetus, and Confidence",
+    "DISCOVER",
+    "Dot be",
+    "EMOTION",
+    "Girls in Transition",
+    "I (Yo), Think (Pienso), Feel (Siento), and Act (Actuo)",
+    "Interpersonal Psychotherapy-Adolescent Skills Training",
+    "LARS&LISA",
+    "Learned Optimism Program",
+    "MoodGYM",
+    "Op Volle Kracht",
+    "SPARX",
+    "Penn Prevention Program",
+    "Penn Resiliency Program",
+    "Positive Thinking Program",
+    "Positive Thoughts and Actions",
+    "Problem Solving For Life",
+    "Resourceful Adolescent Program",
+    "Teaching Kids to Cope",
+    "The Little Prince is Depressed",
+    "Thiswayup",
+    "Think, Be, Do",
+    "UK Resilience Programme",
+    "Unified Protocol for Transdiagnostic Treatment of Emotional Disorders in Adolescents"
+  ),
+  "Generic Interventions" = c(
+    "Cognitive-Behavior",
+    "Emotion Regulation",
+    "Behavioral Activation",
+    "Mindfulness",
+    "Peer Interaction",
+    "Psychoeducational Intervention",
+    "Social Skills Training",
+    "Other Prevention Practice"
+  )
+)
 
 
 
@@ -245,8 +251,13 @@ ui <- fluidPage(
   # Reset button
   fluidRow(
     div(
-      selectizeInput("intervention_filter", "Intervention:", choices = intervention_choices, multiple = TRUE),
-      style = "margin-left: 25px; display:inline-block; width:50%;"),
+      selectizeInput(inputId = "intervention_filter", label = "Intervention:", choices = intervention_choices, #grouped list
+        multiple = TRUE), #, options = list(placeholder = "Select interventions", closeAfterSelect = TRUE)
+        style = "margin-left: 25px; display:inline-block; width:50%;"),
+      
+      # selectizeInput("intervention_filter", "Intervention:", choices = intervention_choices, multiple = TRUE),
+      # style = "margin-left: 25px; display:inline-block; width:50%;"),
+      
     div(actionButton("resetFilters", "Reset Filters", class = "reset-button"),
         style = "padding-left: 30px; width:25%;")
   ),
@@ -479,7 +490,6 @@ server <- function(input, output, session) {
     }
     
     # Filtering by intervention
-    # Filtering by intervention
     if (!is.null(input$intervention_filter) && length(input$intervention_filter) > 0) {
       # Preprocess intervention list to ensure consistent formatting
       filtered_data <- filtered_data %>%
@@ -500,10 +510,14 @@ server <- function(input, output, session) {
       
       # Check if "Other prevention practice" is selected
       if ("other prevention practice" %in% intervention_filter_clean) {
-        # "Other" should return interventions that don't match any known interventions (including expansions)
-        non_match_filter <- rowSums(sapply(known_interventions, function(choice) {
-          grepl(choice, filtered_data$intervention_list_clean, fixed = TRUE)
-        })) == 0
+        # Ensure known_interventions produces valid filtering dimensions
+        non_match_filter <- if (nrow(filtered_data) > 0) {
+          rowSums(sapply(known_interventions, function(choice) {
+            grepl(choice, filtered_data$intervention_list_clean, fixed = TRUE)
+          })) == 0
+        } else {
+          logical(0) # Return an empty logical vector if there are no rows
+        }
         
         # Apply the filter for "Other prevention practice"
         filtered_data <- filtered_data[non_match_filter, ]
@@ -517,13 +531,21 @@ server <- function(input, output, session) {
           }
         }))
         
-        # Match any substring of the expanded filter terms
-        match_filter <- sapply(expanded_filters, function(filter_term) {
-          grepl(filter_term, filtered_data$intervention_list_clean, fixed = TRUE) # Match substrings
-        })
+        # Ensure match_filter produces valid filtering dimensions
+        match_filter <- if (nrow(filtered_data) > 0) {
+          sapply(expanded_filters, function(filter_term) {
+            grepl(filter_term, filtered_data$intervention_list_clean, fixed = TRUE)
+          })
+        } else {
+          matrix(nrow = 0, ncol = 0) # Return an empty matrix if there are no rows
+        }
         
         # Combine matches across all filter terms (row-wise OR logic)
-        combined_filter <- rowSums(match_filter) > 0
+        combined_filter <- if (nrow(filtered_data) > 0 && ncol(match_filter) > 0) {
+          rowSums(match_filter) > 0
+        } else {
+          logical(0) # Return an empty logical vector if there are no matches
+        }
         
         # Apply the filter for selected interventions
         filtered_data <- filtered_data[combined_filter, ]
@@ -532,11 +554,7 @@ server <- function(input, output, session) {
       # Remove the temporary column `intervention_list_clean`
       filtered_data <- filtered_data %>%
         select(-intervention_list_clean)
-      
-
     }
-    
-    
     
     return(filtered_data)
   })
