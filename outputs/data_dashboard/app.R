@@ -49,6 +49,7 @@ app_df <- import(here("data", "dpo_app_data.xlsx"))
 
 # Import cleaned app data from shinyapps working directory - to export
 a5_to_export <- app_df %>% 
+  mutate(percent_race_ethnicity = str_replace_all(percent_race_ethnicity, "Mixed", "Multiracial")) %>% #per user-testing feedback
   select(-study_years, -age_mean_sd, -Comparison, -research_design, -cluster_level_type) %>%  #variables removed via TT feedback 10/2/24
   relocate(percent_race_ethnicity, percent_ELL, percent_FRPL, percent_female, Intervention, outcome_list, .after = last_col()) #reorder re: TT feedback
   
@@ -58,7 +59,8 @@ a5 <- app_df %>%
   mutate(linked_title = ifelse(!is.na(link_text), paste0("<a href='", link_text, "' target='_blank'>", title, "</a>"), title),
          linked_author = ifelse(!is.na(link_corr_author), paste0("<a href='", link_corr_author, "' target='_blank'>", study_author_name, "</a>"), study_author_name),
          intervention_links = pmap_chr(list(Intervention, website_links, clearinghouse_links),
-                                       create_links)) %>% 
+                                       create_links)) %>%
+  mutate(percent_race_ethnicity = str_replace_all(percent_race_ethnicity, "Mixed", "Multiracial")) %>% #per user-testing feedback
   rename(intervention_name = Intervention,
          Intervention = intervention_links) %>% 
   select(publication_year, linked_title, linked_author, everything()) %>% 
@@ -382,7 +384,12 @@ ui <- fluidPage(
                        p("Percentage of female students included in the study."),
                        
                        h4("% Race/Ethnicity:"),
-                       p("Percentage of the student race/ethnicity demographics reported in the study."),
+                       p("Percentage of the student race/ethnicity demographics reported in the study. Note that percentages may not add to 100% and are based on what was reported in the study. Some categories are abbreviated:"),
+                      
+                      tags$ul(
+                        tags$li(HTML("<strong>AIAN:</strong> American Indian and Alaskan Native")),
+                        tags$li(HTML("<strong>NHPI:</strong> Native Hawaiian and Pacific Islander"))
+                      ),
                        
                        h4("% ELL"),
                        p("Percentage of students classified as early language learners."),
