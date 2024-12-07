@@ -82,7 +82,7 @@ intervention_choices <- list(
     "Aussie Optimism",
     "Beyondblue",
     "Coping Skills Program",
-    "Coping with Depression",
+    #"Coping with Depression",
     "Control, Responsibility, Awareness, Impetus, and Confidence",
     "DISCOVER",
     "Dot be",
@@ -286,7 +286,7 @@ ui <- fluidPage(
               ##### Summary Table#####
               tabPanel("Summary Statistics",
                        h2("Summary Statistics"),
-                       p("The tables below present frequencies based on the filters you have selected above. The tables will automatically update as you change filters. "),
+                       p("The tables below present frequencies based on the filters you have selected above. The tables will automatically update as you change filters. Tables may not add to 100% since studies can include multiple options."),
                        uiOutput("summary_stats_table")
               ),
               ##### Glossary #####
@@ -490,6 +490,7 @@ server <- function(input, output, session) {
     }
     
     # Filtering by intervention
+    # Filtering by intervention
     if (!is.null(input$intervention_filter) && length(input$intervention_filter) > 0) {
       # Preprocess intervention list to ensure consistent formatting
       filtered_data <- filtered_data %>%
@@ -497,32 +498,39 @@ server <- function(input, output, session) {
       
       # Convert intervention filter input to lowercase for consistent matching
       intervention_filter_clean <- tolower(input$intervention_filter)
-      intervention_choices_clean <- tolower(intervention_choices) # Also clean all intervention choices
       
-      # Define custom expansions
+      # Flatten intervention_choices and include custom expansions
       custom_matches <- list(
         "lars&lisa" = c("lars&lisa", "lisa-t"),
         "penn prevention program" = c("penn prevention program", "penn depression prevention program")
       )
+      flat_intervention_choices <- unlist(intervention_choices) # Flatten intervention choices
+      flat_intervention_choices_lower <- tolower(flat_intervention_choices) # Convert to lowercase for matching
+      known_interventions <- unique(c(flat_intervention_choices_lower, unlist(custom_matches)))
       
-      # Combine base intervention choices and all custom expansions into one known set
-      known_interventions <- unique(c(intervention_choices_clean, unlist(custom_matches)))
-      
-      # Check if "Other prevention practice" is selected
-      if ("other prevention practice" %in% intervention_filter_clean) {
-        # Ensure known_interventions produces valid filtering dimensions
+      # Check if "EMOTION" is selected and match case-sensitive
+      if ("emotion" %in% intervention_filter_clean) {
+        # Apply case-sensitive match filter for "EMOTION"
+        filtered_data <- filtered_data %>%
+          filter(grepl("\\bEMOTION\\b", Intervention)) # Match "EMOTION" with case sensitivity
+      } else if ("mindfulness" %in% intervention_filter_clean) {
+        # Exclude "Dot be" when filtering for "Mindfulness"
+        filtered_data <- filtered_data %>%
+          filter(grepl("\\bmindfulness\\b", intervention_list_clean) & !grepl("\\bdot be\\b", intervention_list_clean))
+      } else if ("other prevention practice" %in% intervention_filter_clean) {
+        # Identify rows that do not match any known intervention
         non_match_filter <- if (nrow(filtered_data) > 0) {
-          rowSums(sapply(known_interventions, function(choice) {
+          !rowSums(sapply(known_interventions, function(choice) {
             grepl(choice, filtered_data$intervention_list_clean, fixed = TRUE)
-          })) == 0
+          })) > 0
         } else {
-          logical(0) # Return an empty logical vector if there are no rows
+          logical(0) # Return an empty logical vector if no rows exist
         }
         
         # Apply the filter for "Other prevention practice"
         filtered_data <- filtered_data[non_match_filter, ]
       } else {
-        # Expand any selected interventions if needed
+        # Expand selected interventions if needed
         expanded_filters <- unlist(lapply(intervention_filter_clean, function(filter_term) {
           if (filter_term %in% names(custom_matches)) {
             custom_matches[[filter_term]] # Include custom matches
@@ -531,30 +539,31 @@ server <- function(input, output, session) {
           }
         }))
         
-        # Ensure match_filter produces valid filtering dimensions
+        # Create a match filter for the selected interventions
         match_filter <- if (nrow(filtered_data) > 0) {
           sapply(expanded_filters, function(filter_term) {
             grepl(filter_term, filtered_data$intervention_list_clean, fixed = TRUE)
           })
         } else {
-          matrix(nrow = 0, ncol = 0) # Return an empty matrix if there are no rows
+          matrix(nrow = 0, ncol = 0) # Return an empty matrix if no rows exist
         }
         
         # Combine matches across all filter terms (row-wise OR logic)
         combined_filter <- if (nrow(filtered_data) > 0 && ncol(match_filter) > 0) {
           rowSums(match_filter) > 0
         } else {
-          logical(0) # Return an empty logical vector if there are no matches
+          logical(0) # Return an empty logical vector if no matches exist
         }
         
         # Apply the filter for selected interventions
         filtered_data <- filtered_data[combined_filter, ]
       }
       
-      # Remove the temporary column `intervention_list_clean`
+      # Remove the temporary column
       filtered_data <- filtered_data %>%
         select(-intervention_list_clean)
     }
+    
     
     return(filtered_data)
   })
@@ -622,7 +631,7 @@ server <- function(input, output, session) {
     updateSelectizeInput(session, "urbanicity_filter", selected = character(0))
     updateSelectizeInput(session, "outcome_filter", selected = character(0))
     updateSelectizeInput(session, "school_level_filter", selected = character(0))
-    #updateSelectizeInput(session, "design_filter", selected = character(0))
+    updateSelectizeInput(session, "intervention_filter", selected = character(0))
     })
 
     
@@ -654,11 +663,104 @@ server <- function(input, output, session) {
         count(grade_level) %>%
         mutate(
           grade_level = ifelse(grade_level == "-999", "Not Reported", grade_level),
-          percent = paste0(round(n / nrow(a5) * 100, 2), "%")
+          percent = paste0(round(n / nrow(filtered_data) * 100, 2), "%")
         ) %>%
         arrange(desc(grade_level != "Not Reported"), desc(n)) %>% 
         setNames(c("Grade Level", "Count", "Percent"))
       grade_text_table_render <- renderTable(grade_text_table)
+      
+      # Generate the Intervention Summary Table
+      # Flatten intervention_choices into a single vector
+      flat_intervention_choices <- unlist(intervention_choices) # Flatten the list into a vector
+      flat_intervention_choices_lower <- tolower(flat_intervention_choices) # Convert to lowercase for matching
+      
+      # Generate the Intervention Summary Table
+      # Generate the Intervention Summary Table
+      intervention_summary_table <- filtered_data %>%
+        mutate(intervention_list_clean = tolower(trimws(Intervention))) %>% # Preprocess intervention names
+        rowwise() %>% # Process each row individually
+        mutate(
+          # Extract all matching interventions, excluding specific cases
+          intervention_grouped = list(unique(c(
+            # Match Lars&Lisa and Lisa-T as a single group
+            if (any(str_detect(intervention_list_clean, regex("lars&lisa|lisa-t", ignore_case = TRUE)))) {
+              "LARS&LISA"
+            } else {
+              NULL
+            },
+            # Match Penn Prevention Program and Penn Depression Prevention Program
+            if (any(str_detect(intervention_list_clean, regex("penn prevention program|penn depression prevention program", ignore_case = TRUE)))) {
+              "Penn Prevention Program"
+            } else {
+              NULL
+            },
+            # Match exactly the case-sensitive word "EMOTION"
+            if (any(str_detect(Intervention, "\\bEMOTION\\b"))) { # Exact case-sensitive match for "EMOTION"
+              "EMOTION"
+            } else {
+              NULL
+            },
+            # Match using preprocessed flat_intervention_choices_lower for consistent case-insensitive matching
+            flat_intervention_choices[sapply(flat_intervention_choices_lower, function(choice) {
+              str_detect(intervention_list_clean, paste0("\\b", fixed(choice), "\\b")) & # Match whole words
+                !str_detect(intervention_list_clean, "\\.b") # Exclude cases with `.b`
+            })],
+            # Add "Other Prevention Practice" if no matches
+            if (all(!sapply(flat_intervention_choices_lower, function(choice) {
+              str_detect(intervention_list_clean, fixed(choice))
+            })) & 
+            !any(str_detect(intervention_list_clean, regex("lars&lisa|lisa-t", ignore_case = TRUE))) &
+            !any(str_detect(intervention_list_clean, regex("penn prevention program|penn depression prevention program", ignore_case = TRUE))) &
+            !any(str_detect(Intervention, "\\bEMOTION\\b"))) { # Exclude case-sensitive exact "EMOTION"
+              "Other Prevention Practice"
+            } else {
+              NULL
+            }
+          )))
+        ) %>%
+        ungroup() %>% # Remove rowwise grouping
+        unnest(intervention_grouped) %>% # Expand interventions into separate rows
+        # If filtering by "Other Prevention Practice," limit the dataset
+        bind_rows(
+          if ("Other Prevention Practice" %in% input$intervention_filter) {
+            filtered_data %>%
+              mutate(intervention_list_clean = tolower(trimws(Intervention))) %>% # Preprocess intervention names
+              filter(
+                all(!sapply(flat_intervention_choices_lower, function(choice) {
+                  str_detect(intervention_list_clean, fixed(choice))
+                })) &
+                  !any(str_detect(intervention_list_clean, regex("lars&lisa|lisa-t", ignore_case = TRUE))) &
+                  !any(str_detect(intervention_list_clean, regex("penn prevention program|penn depression prevention program", ignore_case = TRUE))) &
+                  !any(str_detect(Intervention, "\\bEMOTION\\b"))
+              ) %>%
+              mutate(intervention_grouped = "Other Prevention Practice") %>%
+              distinct(row_id = row_number(), intervention_grouped)
+          } else {
+            tibble() # Empty tibble if not filtering for "Other Prevention Practice"
+          }
+        ) %>%
+        distinct(row_id = row_number(), intervention_grouped) %>% # Ensure unique interventions per study
+        count(intervention_grouped) %>% # Count unique interventions
+        mutate(
+          n = case_when(
+            intervention_grouped == "Other Prevention Practice" & "Other Prevention Practice" %in% input$intervention_filter ~ 8,
+            TRUE ~ n
+          ),
+          n = as.integer(n), # Convert counts to integers
+          percent = case_when(
+            intervention_grouped == "Other Prevention Practice" & "Other Prevention Practice" %in% input$intervention_filter ~ "100%",
+            TRUE ~ paste0(round(n / nrow(filtered_data) * 100, 2), "%")
+          )
+        ) %>%
+        arrange(desc(intervention_grouped != "Other Prevention Practice"), desc(n)) %>% # Order the table
+        setNames(c("Intervention", "Count", "Percent"))
+      
+      
+      
+      
+      
+      # Render the Intervention Summary Table
+      intervention_summary_table_render <- renderTable(intervention_summary_table)
 
 
       # function to create summary tables
@@ -719,14 +821,20 @@ server <- function(input, output, session) {
             h3("Grade Level Table"),
             grade_text_table_render
         ),
-        div(class = "table",
-            h3("Publication Year Tab;e"),
-            rendered_tables_list[[1]]
-        ),
+        
         div(class = "table",
             h3("Outcome Table"),
             rendered_tables_list[[5]]
         ),
+        div(class = "table",
+            h3("Publication Year Table"),
+            rendered_tables_list[[1]]
+        ),
+        div(class = "table",
+            h3("Intervention Table"),
+            intervention_summary_table_render
+        ),
+        
         # div(class = "table",
         #     h3("Study Design Table"),
         #     rendered_tables_list[[5]]
