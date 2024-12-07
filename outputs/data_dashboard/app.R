@@ -676,84 +676,66 @@ server <- function(input, output, session) {
       
       # Generate the Intervention Summary Table
       # Generate the Intervention Summary Table
+      # Generate the Intervention Summary Table
       intervention_summary_table <- filtered_data %>%
-        mutate(intervention_list_clean = tolower(trimws(Intervention))) %>% # Preprocess intervention names
-        rowwise() %>% # Process each row individually
+        mutate(intervention_list_clean = str_squish(tolower(trimws(Intervention)))) %>%
+        # Unify all variants of "Adolescent Coping with Depression" into a single standardized term
+        mutate(intervention_list_clean = case_when(
+          # Detect any occurrence of "adolescent coping with depression" (even with extra text like (CWD-A))
+          str_detect(intervention_list_clean, "adolescent coping with depression") ~ "adolescent coping with depression",
+          TRUE ~ intervention_list_clean
+        )) %>%
+        rowwise() %>%
         mutate(
-          # Extract all matching interventions, excluding specific cases
           intervention_grouped = list(unique(c(
             # Match Lars&Lisa and Lisa-T as a single group
             if (any(str_detect(intervention_list_clean, regex("lars&lisa|lisa-t", ignore_case = TRUE)))) {
               "LARS&LISA"
-            } else {
-              NULL
-            },
+            } else NULL,
             # Match Penn Prevention Program and Penn Depression Prevention Program
             if (any(str_detect(intervention_list_clean, regex("penn prevention program|penn depression prevention program", ignore_case = TRUE)))) {
               "Penn Prevention Program"
-            } else {
-              NULL
-            },
+            } else NULL,
             # Match exactly the case-sensitive word "EMOTION"
-            if (any(str_detect(Intervention, "\\bEMOTION\\b"))) { # Exact case-sensitive match for "EMOTION"
+            if (any(str_detect(Intervention, "\\bEMOTION\\b"))) {
               "EMOTION"
-            } else {
-              NULL
-            },
+            } else NULL,
             # Match using preprocessed flat_intervention_choices_lower for consistent case-insensitive matching
             flat_intervention_choices[sapply(flat_intervention_choices_lower, function(choice) {
-              str_detect(intervention_list_clean, paste0("\\b", fixed(choice), "\\b")) & # Match whole words
-                !str_detect(intervention_list_clean, "\\.b") # Exclude cases with `.b`
+              str_detect(intervention_list_clean, paste0("\\b", fixed(choice), "\\b")) &
+                !str_detect(intervention_list_clean, "\\.b") # Exclude `.b` variants
             })],
             # Add "Other Prevention Practice" if no matches
             if (all(!sapply(flat_intervention_choices_lower, function(choice) {
               str_detect(intervention_list_clean, fixed(choice))
-            })) & 
+            })) &
             !any(str_detect(intervention_list_clean, regex("lars&lisa|lisa-t", ignore_case = TRUE))) &
             !any(str_detect(intervention_list_clean, regex("penn prevention program|penn depression prevention program", ignore_case = TRUE))) &
-            !any(str_detect(Intervention, "\\bEMOTION\\b"))) { # Exclude case-sensitive exact "EMOTION"
+            !any(str_detect(Intervention, "\\bEMOTION\\b"))) {
               "Other Prevention Practice"
-            } else {
-              NULL
-            }
+            } else NULL
           )))
         ) %>%
-        ungroup() %>% # Remove rowwise grouping
-        unnest(intervention_grouped) %>% # Expand interventions into separate rows
-        # If filtering by "Other Prevention Practice," limit the dataset
-        bind_rows(
-          if ("Other Prevention Practice" %in% input$intervention_filter) {
-            filtered_data %>%
-              mutate(intervention_list_clean = tolower(trimws(Intervention))) %>% # Preprocess intervention names
-              filter(
-                all(!sapply(flat_intervention_choices_lower, function(choice) {
-                  str_detect(intervention_list_clean, fixed(choice))
-                })) &
-                  !any(str_detect(intervention_list_clean, regex("lars&lisa|lisa-t", ignore_case = TRUE))) &
-                  !any(str_detect(intervention_list_clean, regex("penn prevention program|penn depression prevention program", ignore_case = TRUE))) &
-                  !any(str_detect(Intervention, "\\bEMOTION\\b"))
-              ) %>%
-              mutate(intervention_grouped = "Other Prevention Practice") %>%
-              distinct(row_id = row_number(), intervention_grouped)
-          } else {
-            tibble() # Empty tibble if not filtering for "Other Prevention Practice"
-          }
-        ) %>%
-        distinct(row_id = row_number(), intervention_grouped) %>% # Ensure unique interventions per study
-        count(intervention_grouped) %>% # Count unique interventions
+        ungroup() %>%
+        unnest(intervention_grouped) %>%
+        distinct(row_id = row_number(), intervention_grouped) %>%
+        count(intervention_grouped) %>%
         mutate(
           n = case_when(
             intervention_grouped == "Other Prevention Practice" & "Other Prevention Practice" %in% input$intervention_filter ~ 8,
             TRUE ~ n
           ),
-          n = as.integer(n), # Convert counts to integers
+          n = as.integer(n),
           percent = case_when(
             intervention_grouped == "Other Prevention Practice" & "Other Prevention Practice" %in% input$intervention_filter ~ "100%",
-            TRUE ~ paste0(round(n / nrow(filtered_data) * 100, 2), "%")
+            TRUE ~ paste0(round(n / sum(n) * 100, 2), "%")
           )
         ) %>%
-        arrange(desc(intervention_grouped != "Other Prevention Practice"), desc(n)) %>% # Order the table
+        arrange(desc(intervention_grouped != "Other Prevention Practice"), desc(n)) %>%
         setNames(c("Intervention", "Count", "Percent"))
+      
+      
+      
       
       
       
