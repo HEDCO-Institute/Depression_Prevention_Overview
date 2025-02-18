@@ -2,6 +2,13 @@
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(tidyverse, rio, here, readxl, shiny, bib2df, stringi, DT, openxlsx)
 
+# Specify update dates
+last_search <- "October 2022"
+next_search <- "May 2025"
+
+# Import
+app_df <- import(here("data", "dpo_app_data.xlsx"))
+
 #### Set-up ####
 # Functions
 # Function to create HTML links for each intervention
@@ -44,8 +51,7 @@ create_links <- function(interventions, websites, clearinghouses) {
   paste(links, collapse = "; ")
 }
 
-# Import
-app_df <- import(here("data", "dpo_app_data.xlsx"))
+
 
 # Import cleaned app data from shinyapps working directory - to export
 a5_to_export <- app_df %>% 
@@ -408,7 +414,17 @@ ui <- fluidPage(
                        h4("% FRPL"),
                        p("Percentage of students qualifiying for free or reduced priced lunch."),
               )
-  )
+  ),
+  fluidRow(
+    column(12,  # Makes it span the full width
+           div(
+             style = "text-align: left; padding: 10px; background-color: #f4f4f4; width: 100%; font-size: 14px; margin-top: 15px;",
+             p(
+               HTML("<i class='fa fa-calendar'></i> Last search of the literature: <b>", last_search, "</b>"),
+               HTML("<br><i class='fa fa-refresh'></i> Updated search expected: <b>", next_search, "</b>")
+             )
+           )
+    ))
 )
 
 #### SERVER #### 
