@@ -3,10 +3,10 @@
 
 📅 **Date of Release:** 3/24/2025  
 📝 **Title:** Effectiveness of School-Based Depression Prevention Interventions: An Overview of Systematic Reviews With Meta-Analyses on Depression Outcomes  
-🔗 **OSF Component for Publication:** <https://osf.io/kg57y/> 
+🔗 **OSF Component for Publication:** <https://osf.io/kg57y/> <br>
 📄 **Package Author:** Shaina Trevino 
 
----
+
 
 ## **🔹 Overview**
 This folder contains the replication materials for the following publication:  
@@ -18,7 +18,7 @@ This replication package follows **[AEA Data and Code Availability Standards](ht
 - Code necessary to reproduce quantitative results reported.
 - Computational environment details to ensure reproducibility.
 
----
+
 
 ## **🔹 Data and Code Availability Statement**
 ### **Data Sources**
@@ -51,7 +51,7 @@ Grant, S., Schweer-Collins, M., Day, E., Trevino, S. D., Steinka-Fry, K., & Tann
 ### **Handling of Missing Data**
 - Missing values in the datasets are coded as `-999`, `Not Reported`, or `NA` and indicate those values were not reported in studies/reviews.
 
----
+
 
 
 ## **🔹 Computational Requirements**
@@ -91,7 +91,7 @@ library(bib2df)
 library(ccaR)
 ```
 
----
+
 
 ## **🔹 Instructions for Replication**
 
@@ -138,7 +138,7 @@ There are some discrepancies between outputs from the analysis script and those 
 - In Table 1, two responses for Kambara 2021 were corrected:
   - AMSTAR Domain 9 and Domain 11 should be reported as "No" rather than "Yes" due to the NRSI rating
 
----
+
 
 
 ## **🔹 Folder Structure**
@@ -169,13 +169,13 @@ There are some discrepancies between outputs from the analysis script and those 
 │── 📄 README.md               # This README document
 ```
 
----
+
 
 
 ## **🔹 Licensing**
 The code and data in this replication package are licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0); see the LICENSE file in the main repository root directory for full terms
 
----
+
 
 ## **🔹 Contact Information**
 For questions about this replication package, contact:  
