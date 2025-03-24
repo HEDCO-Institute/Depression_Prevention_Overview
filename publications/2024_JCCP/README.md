@@ -1,10 +1,10 @@
 
 # **Replication Package for 2024 JCCP Publication**
 
-📅 **Date of Release:** 3/24/2025  
-📝 **Title:** Effectiveness of School-Based Depression Prevention Interventions: An Overview of Systematic Reviews With Meta-Analyses on Depression Outcomes  
-🔗 **OSF Component for Publication:** <https://osf.io/kg57y/> <br>
-📄 **Package Author:** Shaina Trevino 
+**Date of Release:** 3/24/2025  
+**Title:** Effectiveness of School-Based Depression Prevention Interventions: An Overview of Systematic Reviews With Meta-Analyses on Depression Outcomes  
+**OSF Component for Publication:** <https://osf.io/kg57y/> <br>
+**Package Author:** Shaina Trevino 
 
 
 
