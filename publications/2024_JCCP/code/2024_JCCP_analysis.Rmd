@@ -14,6 +14,7 @@ output: html_document
 # # # Install and load required packages
 # pacman::p_load(rmarkdown, devtools, here, readxl, janitor, tidyverse, openxlsx, robumeta, metafor, lubridate, gt, webshot2, DiagrammeR, prismadiagramR, stringi, htmltools, bib2df) 
 # pacman::p_load_gh("thdiakon/ccaR", "mcguinlu/robvis") #from github
+#renv::install("thdiakon/ccaR")
 # # Create snapshot of packages for reproducible environment
 # renv::snapshot()
 
@@ -26,10 +27,10 @@ knitr::opts_chunk$set(echo = TRUE)
 if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
 
 # Load environment
-renv::load("publications/2024_JCCP")
+renv::load(here::here("publications", "2024_JCCP"))
 
 # Restore any missing packages
-renv::restore("publications/2024_JCCP")
+renv::restore(here::here("publications", "2024_JCCP"))
 
 ```
 
@@ -52,6 +53,9 @@ library(ccaR)
 
 # Set file path for data importing
 cwd <- here::here("publications", "2024_JCCP", "data")
+
+# Set output directory
+outputs_dir <- here("publications", "2024_JCCP", "outputs")
 
 ```
 
@@ -905,9 +909,6 @@ print(t2_formatted)
 Save table 1 to `outputs/tables`` project folder: 
 
 ```{r save-t2}
-# Set output directory
-outputs_dir <- here("publications", "2024_JCCP", "outputs")
-
 # Save as HTML
 gtsave(t2_formatted, filename = "2024_JCCP_table1.html", path = outputs_dir)
 
