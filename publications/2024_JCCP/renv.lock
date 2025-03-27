@@ -72,57 +72,6 @@
       "Maintainer": "Kirill Müller <krlmlr+r@mailbox.org>",
       "Repository": "CRAN"
     },
-    "DiagrammeR": {
-      "Package": "DiagrammeR",
-      "Version": "1.0.9",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Graph/Network Visualization",
-      "Authors@R": "person(\"Richard\", \"Iannone\", , \"riannone@me.com\", c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0003-3925-190X\"))",
-      "Description": "Build graph/network structures using functions for stepwise addition and deletion of nodes and edges. Work with data available in tables for bulk addition of nodes, edges, and associated metadata. Use graph selections and traversals to apply changes to specific nodes or edges. A wide selection of graph algorithms allow for the analysis of graphs. Visualize the graphs and take advantage of any aesthetic properties assigned to nodes and edges.",
-      "License": "MIT + file LICENSE",
-      "URL": "https://github.com/rich-iannone/DiagrammeR",
-      "BugReports": "https://github.com/rich-iannone/DiagrammeR/issues",
-      "Depends": [
-        "R (>= 3.2)"
-      ],
-      "Imports": [
-        "dplyr (>= 1.0.7)",
-        "downloader (>= 0.4)",
-        "glue (>= 1.5.0)",
-        "htmltools (>= 0.5.2)",
-        "htmlwidgets (>= 1.5)",
-        "igraph (>= 1.2.11)",
-        "influenceR (>= 0.1.0.1)",
-        "magrittr (>= 1.5)",
-        "purrr (>= 0.3.4)",
-        "RColorBrewer (>= 1.1-2)",
-        "readr (>= 2.1.1)",
-        "rlang (>= 0.4)",
-        "rstudioapi (>= 0.7)",
-        "scales (>= 1.1)",
-        "stringr (>= 1.4)",
-        "tibble (>= 3.1)",
-        "tidyr (>= 1.1)",
-        "viridis (>= 0.6.2)",
-        "visNetwork (>= 2.1.0)"
-      ],
-      "Suggests": [
-        "covr",
-        "DiagrammeRsvg",
-        "rsvg",
-        "knitr",
-        "testthat",
-        "rmarkdown"
-      ],
-      "Encoding": "UTF-8",
-      "LazyData": "true",
-      "RoxygenNote": "7.1.2",
-      "NeedsCompilation": "no",
-      "Author": "Richard Iannone [aut, cre] (<https://orcid.org/0000-0003-3925-190X>)",
-      "Maintainer": "Richard Iannone <riannone@me.com>",
-      "Repository": "CRAN"
-    },
     "MASS": {
       "Package": "MASS",
       "Version": "7.3-58.1",
@@ -829,6 +778,39 @@
       "Author": "Gábor Csárdi [aut, cre, cph] (<https://orcid.org/0000-0001-7098-9676>), Winston Chang [aut], RStudio [cph, fnd], Mango Solutions [cph, fnd]",
       "Maintainer": "Gábor Csárdi <csardi.gabor@gmail.com>",
       "Repository": "CRAN"
+    },
+    "ccaR": {
+      "Package": "ccaR",
+      "Version": "0.1.0",
+      "Source": "GitHub",
+      "Type": "Package",
+      "Title": "Calculates the Corrected Covered Area Index and Creates a Heatmap",
+      "Author": "Theodoros Diakonidis, Konstantinos Bougioukas",
+      "Maintainer": "Theodoros Diakonidis <diakonidis@auth.gr>",
+      "Description": "Calculates and depicts the corrected covered area (CCA) index. This index is useful for asessesing the degree of primary study overlap across systematic reviews included in an overview. All the functions enable the incorporation of structural missingness in the citation matrix. The generated \"ggplot2\"-based heatmap is a publication-ready plot and may be useful for authors who conduct overviews of reviews.",
+      "License": "GPL-2",
+      "Encoding": "UTF-8",
+      "LazyData": "FALSE",
+      "Imports": [
+        "ggplot2",
+        "readxl",
+        "utils"
+      ],
+      "RoxygenNote": "7.2.0",
+      "Depends": [
+        "R (>= 2.10)"
+      ],
+      "VignetteBuilder": "knitr",
+      "Suggests": [
+        "markdown",
+        "knitr"
+      ],
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "thdiakon",
+      "RemoteRepo": "ccaR",
+      "RemoteRef": "main",
+      "RemoteSha": "b9056516067d17c550eb65c0a31ef541b9041ddd"
     },
     "cellranger": {
       "Package": "cellranger",
@@ -1553,27 +1535,6 @@
       "NeedsCompilation": "no",
       "Author": "Hadley Wickham [aut, cre], RStudio [cph, fnd]",
       "Maintainer": "Hadley Wickham <hadley@rstudio.com>",
-      "Repository": "CRAN"
-    },
-    "downloader": {
-      "Package": "downloader",
-      "Version": "0.4",
-      "Source": "Repository",
-      "Maintainer": "Winston Chang <winston@stdout.org>",
-      "Author": "Winston Chang <winston@stdout.org>",
-      "License": "GPL-2",
-      "Title": "Download Files over HTTP and HTTPS",
-      "Description": "Provides a wrapper for the download.file function, making it possible to download files over HTTPS on Windows, Mac OS X, and other Unix-like platforms. The 'RCurl' package provides this functionality (and much more) but can be difficult to install because it must be compiled with external dependencies. This package has no external dependencies, so it is much easier to install.",
-      "URL": "https://github.com/wch/downloader",
-      "Imports": [
-        "utils",
-        "digest"
-      ],
-      "Suggests": [
-        "testthat"
-      ],
-      "BugReports": "https://github.com/wch/downloader/issues",
-      "NeedsCompilation": "no",
       "Repository": "CRAN"
     },
     "dplyr": {
@@ -2347,36 +2308,6 @@
       "Maintainer": "Jennifer Bryan <jenny@posit.co>",
       "Repository": "CRAN"
     },
-    "gridExtra": {
-      "Package": "gridExtra",
-      "Version": "2.3",
-      "Source": "Repository",
-      "Authors@R": "c(person(\"Baptiste\", \"Auguie\", email = \"baptiste.auguie@gmail.com\", role = c(\"aut\", \"cre\")), person(\"Anton\", \"Antonov\", email = \"tonytonov@gmail.com\", role = c(\"ctb\")))",
-      "License": "GPL (>= 2)",
-      "Title": "Miscellaneous Functions for \"Grid\" Graphics",
-      "Type": "Package",
-      "Description": "Provides a number of user-level functions to work with \"grid\" graphics, notably to arrange multiple grid-based plots on a page, and draw tables.",
-      "VignetteBuilder": "knitr",
-      "Imports": [
-        "gtable",
-        "grid",
-        "grDevices",
-        "graphics",
-        "utils"
-      ],
-      "Suggests": [
-        "ggplot2",
-        "egg",
-        "lattice",
-        "knitr",
-        "testthat"
-      ],
-      "RoxygenNote": "6.0.1",
-      "NeedsCompilation": "no",
-      "Author": "Baptiste Auguie [aut, cre], Anton Antonov [ctb]",
-      "Maintainer": "Baptiste Auguie <baptiste.auguie@gmail.com>",
-      "Repository": "CRAN"
-    },
     "gt": {
       "Package": "gt",
       "Version": "0.8.0",
@@ -2844,85 +2775,6 @@
       "Maintainer": "Rich FitzJohn <rich.fitzjohn@gmail.com>",
       "Repository": "CRAN"
     },
-    "igraph": {
-      "Package": "igraph",
-      "Version": "1.4.1",
-      "Source": "Repository",
-      "Title": "Network Analysis and Visualization",
-      "Author": "See AUTHORS file.",
-      "Maintainer": "Tamás Nepusz <ntamas@gmail.com>",
-      "Description": "Routines for simple graphs and network analysis. It can handle large graphs very well and provides functions for generating random and regular graphs, graph visualization, centrality methods and much more.",
-      "Depends": [
-        "methods"
-      ],
-      "Imports": [
-        "graphics",
-        "grDevices",
-        "magrittr",
-        "Matrix",
-        "pkgconfig (>= 2.0.0)",
-        "rlang",
-        "stats",
-        "utils"
-      ],
-      "Suggests": [
-        "ape",
-        "digest",
-        "graph",
-        "igraphdata",
-        "rgl",
-        "scales",
-        "stats4",
-        "tcltk",
-        "testthat",
-        "withr",
-        "vdiffr",
-        "knitr",
-        "rmarkdown"
-      ],
-      "License": "GPL (>= 2)",
-      "URL": "https://igraph.org, https://igraph.discourse.group/",
-      "SystemRequirements": "gmp (optional), libxml2 (optional), glpk (>= 4.57, optional)",
-      "BugReports": "https://github.com/igraph/rigraph/issues",
-      "Encoding": "UTF-8",
-      "Config/Needs/build": "roxygen2, devtools, irlba, pkgconfig",
-      "Config/Needs/coverage": "covr",
-      "Config/testthat/edition": "3",
-      "Config/testthat/parallel": "true",
-      "Config/testthat/start-first": "vs-es, scan, vs-operators, weakref, watts.strogatz.game",
-      "RoxygenNote": "7.2.3",
-      "VignetteBuilder": "knitr",
-      "NeedsCompilation": "yes",
-      "Repository": "CRAN",
-      "ExperimentalWindowsRuntime": "ucrt"
-    },
-    "influenceR": {
-      "Package": "influenceR",
-      "Version": "0.1.0.1",
-      "Source": "Repository",
-      "Title": "Software Tools to Quantify Structural Importance of Nodes in a Network",
-      "Authors@R": "c( person(\"Jacobs\", \"Simon\", email = \"sdjacobs@uchicago.edu\", role = \"aut\"), person(\"Khanna\", \"Aditya\", email = \"khanna7@uchicago.edu\", role = c(\"aut\", \"cre\")), person(\"Madduri\", \"Kamesh\", email = \"madduri@cse.psu.edu\", role = \"ctb\"), person(\"Bader\", \"David\", email = \"bader@cc.gatech.edu\", role = \"ctb\"))",
-      "Description": "Provides functionality to compute various node centrality measures on networks. Included are functions to compute betweenness centrality (by utilizing Madduri and Bader's SNAP library), implementations of Burt's constraint and effective network size (ENS) metrics, Borgatti's algorithm to identify key players, and Valente's bridging metric. On Unix systems, the betweenness, Key Players, and bridging implementations are parallelized with OpenMP, which may run faster on systems which have OpenMP configured.",
-      "Depends": [
-        "R (>= 3.2.0)"
-      ],
-      "License": "GPL-2",
-      "Imports": [
-        "igraph (>= 1.0.1)",
-        "Matrix (>= 1.1-4)",
-        "methods",
-        "utils"
-      ],
-      "NeedsCompilation": "yes",
-      "Suggests": [
-        "testthat"
-      ],
-      "URL": "https://github.com/rcc-uchicago/influenceR",
-      "Author": "Jacobs Simon [aut], Khanna Aditya [aut, cre], Madduri Kamesh [ctb], Bader David [ctb]",
-      "Maintainer": "Khanna Aditya <khanna7@uchicago.edu>",
-      "Repository": "CRAN",
-      "ExperimentalWindowsRuntime": "ucrt"
-    },
     "ini": {
       "Package": "ini",
       "Version": "0.3.1",
@@ -3376,27 +3228,6 @@
       "Repository": "CRAN",
       "ExperimentalWindowsRuntime": "ucrt"
     },
-    "mathjaxr": {
-      "Package": "mathjaxr",
-      "Version": "1.6-0",
-      "Source": "Repository",
-      "Date": "2022-02-28",
-      "Title": "Using 'Mathjax' in Rd Files",
-      "Authors@R": "person(given = \"Wolfgang\", family = \"Viechtbauer\", role = c(\"aut\",\"cre\"), email = \"wvb@wvbauer.com\", comment = c(ORCID = \"0000-0003-3463-4063\"))",
-      "Description": "Provides 'MathJax' and macros to enable its use within Rd files for rendering equations in the HTML help files.",
-      "License": "GPL-3",
-      "Encoding": "UTF-8",
-      "URL": "https://github.com/wviechtb/mathjaxr",
-      "BugReports": "https://github.com/wviechtb/mathjaxr/issues",
-      "Suggests": [
-        "js"
-      ],
-      "NeedsCompilation": "yes",
-      "Author": "Wolfgang Viechtbauer [aut, cre] (<https://orcid.org/0000-0003-3463-4063>)",
-      "Maintainer": "Wolfgang Viechtbauer <wvb@wvbauer.com>",
-      "Repository": "CRAN",
-      "ExperimentalWindowsRuntime": "ucrt"
-    },
     "memoise": {
       "Package": "memoise",
       "Version": "2.0.1",
@@ -3425,119 +3256,6 @@
       "NeedsCompilation": "no",
       "Author": "Hadley Wickham [aut], Jim Hester [aut], Winston Chang [aut, cre], Kirill Müller [aut], Daniel Cook [aut], Mark Edmondson [ctb]",
       "Maintainer": "Winston Chang <winston@rstudio.com>",
-      "Repository": "CRAN"
-    },
-    "metadat": {
-      "Package": "metadat",
-      "Version": "1.2-0",
-      "Source": "Repository",
-      "Date": "2022-04-05",
-      "Title": "Meta-Analysis Datasets",
-      "Authors@R": "c( person(given = \"Thomas\", family=\"White\", role=\"aut\", email = \"thomas.white@sydney.edu.au\", comment = c(ORCID = \"0000-0002-3976-1734\")), person(given = \"Daniel\", family=\"Noble\", role=\"aut\", email = \"daniel.noble@anu.edu.au\", comment = c(ORCID = \"0000-0001-9460-8743\")), person(given = \"Alistair\", family=\"Senior\", role=\"aut\", email = \"alistair.senior@sydney.edu.au\", comment = c(ORCID = \"0000-0001-9805-7280\")), person(given = \"W. Kyle\", family=\"Hamilton\", role=\"aut\", email = \"whamilton@ucmerced.edu\", comment = c(ORCID = \"0000-0002-8642-7990\")), person(given = \"Wolfgang\", family = \"Viechtbauer\", role = c(\"aut\",\"cre\"), email = \"wvb@metafor-project.org\", comment = c(ORCID = \"0000-0003-3463-4063\")), person(given = \"Guido\", family = \"Schwarzer\", role = \"dtc\", email = \"sc@imbi.uni-freiburg.de\", comment = c(ORCID = \"0000-0001-6214-9087\")))",
-      "Depends": [
-        "R (>= 4.0.0)"
-      ],
-      "Imports": [
-        "utils",
-        "tools",
-        "mathjaxr"
-      ],
-      "Suggests": [
-        "metafor",
-        "numDeriv",
-        "BiasedUrn",
-        "dfoptim",
-        "igraph",
-        "ape",
-        "testthat",
-        "digest",
-        "lme4",
-        "clubSandwich",
-        "meta",
-        "netmeta",
-        "mvtnorm",
-        "gridExtra",
-        "rms"
-      ],
-      "Description": "A collection of meta-analysis datasets for teaching purposes, illustrating/testing meta-analytic methods, and validating published analyses.",
-      "License": "GPL (>= 2)",
-      "ByteCompile": "TRUE",
-      "LazyData": "TRUE",
-      "Encoding": "UTF-8",
-      "RdMacros": "mathjaxr",
-      "URL": "https://github.com/wviechtb/metadat",
-      "BugReports": "https://github.com/wviechtb/metadat/issues",
-      "NeedsCompilation": "no",
-      "Author": "Thomas White [aut] (<https://orcid.org/0000-0002-3976-1734>), Daniel Noble [aut] (<https://orcid.org/0000-0001-9460-8743>), Alistair Senior [aut] (<https://orcid.org/0000-0001-9805-7280>), W. Kyle Hamilton [aut] (<https://orcid.org/0000-0002-8642-7990>), Wolfgang Viechtbauer [aut, cre] (<https://orcid.org/0000-0003-3463-4063>), Guido Schwarzer [dtc] (<https://orcid.org/0000-0001-6214-9087>)",
-      "Maintainer": "Wolfgang Viechtbauer <wvb@metafor-project.org>",
-      "Repository": "CRAN"
-    },
-    "metafor": {
-      "Package": "metafor",
-      "Version": "3.8-1",
-      "Source": "Repository",
-      "Date": "2022-08-26",
-      "Title": "Meta-Analysis Package for R",
-      "Authors@R": "person(given = \"Wolfgang\", family = \"Viechtbauer\", role = c(\"aut\",\"cre\"), email = \"wvb@metafor-project.org\", comment = c(ORCID = \"0000-0003-3463-4063\"))",
-      "Depends": [
-        "R (>= 4.0.0)",
-        "methods",
-        "Matrix",
-        "metadat"
-      ],
-      "Imports": [
-        "stats",
-        "utils",
-        "graphics",
-        "grDevices",
-        "nlme",
-        "mathjaxr",
-        "pbapply"
-      ],
-      "Suggests": [
-        "lme4",
-        "numDeriv",
-        "pracma",
-        "minqa",
-        "nloptr",
-        "dfoptim",
-        "ucminf",
-        "lbfgsb3c",
-        "subplex",
-        "BB",
-        "Rsolnp",
-        "alabama",
-        "optimParallel",
-        "CompQuadForm",
-        "mvtnorm",
-        "BiasedUrn",
-        "Epi",
-        "survival",
-        "GLMMadaptive",
-        "glmmTMB",
-        "multcomp",
-        "gsl",
-        "sp",
-        "ape",
-        "boot",
-        "clubSandwich",
-        "crayon",
-        "R.rsp",
-        "testthat",
-        "rmarkdown",
-        "wildmeta"
-      ],
-      "Description": "A comprehensive collection of functions for conducting meta-analyses in R. The package includes functions to calculate various effect sizes or outcome measures, fit equal-, fixed-, random-, and mixed-effects models to such data, carry out moderator and meta-regression analyses, and create various types of meta-analytical plots (e.g., forest, funnel, radial, L'Abbe, Baujat, bubble, and GOSH plots). For meta-analyses of binomial and person-time data, the package also provides functions that implement specialized methods, including the Mantel-Haenszel method, Peto's method, and a variety of suitable generalized linear (mixed-effects) models (i.e., mixed-effects logistic and Poisson regression models). Finally, the package provides functionality for fitting meta-analytic multivariate/multilevel models that account for non-independent sampling errors and/or true effects (e.g., due to the inclusion of multiple treatment studies, multiple endpoints, or other forms of clustering). Network meta-analyses and meta-analyses accounting for known correlation structures (e.g., due to phylogenetic relatedness) can also be conducted. An introduction to the package can be found in Viechtbauer (2010) <doi:10.18637/jss.v036.i03>.",
-      "License": "GPL (>= 2)",
-      "ByteCompile": "TRUE",
-      "Encoding": "UTF-8",
-      "RdMacros": "mathjaxr",
-      "VignetteBuilder": "R.rsp",
-      "URL": "https://www.metafor-project.org https://github.com/wviechtb/metafor https://wviechtb.github.io/metafor/ https://www.wvbauer.com",
-      "BugReports": "https://github.com/wviechtb/metafor/issues",
-      "NeedsCompilation": "no",
-      "Author": "Wolfgang Viechtbauer [aut, cre] (<https://orcid.org/0000-0003-3463-4063>)",
-      "Maintainer": "Wolfgang Viechtbauer <wvb@metafor-project.org>",
       "Repository": "CRAN"
     },
     "mgcv": {
@@ -3793,67 +3511,6 @@
       "Maintainer": "Philipp Schauberger <philipp@schauberger.co.at>",
       "Repository": "CRAN",
       "ExperimentalWindowsRuntime": "ucrt"
-    },
-    "pacman": {
-      "Package": "pacman",
-      "Version": "0.5.1",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Package Management Tool",
-      "Authors@R": "c(person(\"Tyler\", \"Rinker\", role = c(\"aut\", \"cre\", \"ctb\"), email = \"tyler.rinker@gmail.com\"), person(\"Dason\", \"Kurkiewicz\", role = c(\"aut\", \"ctb\"), email = \"dasonk@gmail.com\"), person(\"Keith\", \"Hughitt\", role = c(\"ctb\")), person(\"Albert\", \"Wang\", role = c(\"ctb\")), person(\"Garrick\", \"Aden-Buie\", role = c(\"ctb\")), person(\"Albert\", \"Wang\", role = c(\"ctb\")), person(\"Lukas\", \"Burk\", role = c(\"ctb\")))",
-      "Depends": [
-        "R (>= 3.5.0)"
-      ],
-      "Imports": [
-        "remotes",
-        "methods",
-        "stats",
-        "utils"
-      ],
-      "Suggests": [
-        "BiocManager",
-        "knitr",
-        "lattice",
-        "testthat (>= 0.9.0)",
-        "XML"
-      ],
-      "BugReports": "https://github.com/trinker/pacman/issues?state=open",
-      "Description": "Tools to more conveniently perform tasks associated with add-on packages. pacman conveniently wraps library and package related functions and names them in an intuitive and consistent fashion.  It seeks to combine functionality from lower level functions which can speed up workflow.",
-      "License": "GPL-2",
-      "URL": "https://github.com/trinker/pacman",
-      "RoxygenNote": "6.1.1",
-      "NeedsCompilation": "no",
-      "Author": "Tyler Rinker [aut, cre, ctb], Dason Kurkiewicz [aut, ctb], Keith Hughitt [ctb], Albert Wang [ctb], Garrick Aden-Buie [ctb], Albert Wang [ctb], Lukas Burk [ctb]",
-      "Maintainer": "Tyler Rinker <tyler.rinker@gmail.com>",
-      "Repository": "CRAN"
-    },
-    "pbapply": {
-      "Package": "pbapply",
-      "Version": "1.7-0",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Adding Progress Bar to '*apply' Functions",
-      "Date": "2023-01-12",
-      "Authors@R": "c(person(given = \"Peter\", family = \"Solymos\", comment = c(ORCID = \"0000-0001-7337-1740\"), role = c(\"aut\", \"cre\"), email = \"psolymos@gmail.com\"), person(given = \"Zygmunt\", family = \"Zawadzki\", role = \"aut\", email = \"zygmunt@zstat.pl\"), person(given = \"Henrik\",  family = \"Bengtsson\",  role = \"ctb\", email = \"henrikb@braju.com\"), person(\"R Core Team\", role = c(\"cph\", \"ctb\")))",
-      "Maintainer": "Peter Solymos <psolymos@gmail.com>",
-      "Description": "A lightweight package that adds progress bar to vectorized R functions ('*apply'). The implementation can easily be added to functions where showing the progress is useful (e.g. bootstrap). The type and style of the progress bar (with percentages or remaining time) can be set through options. Supports several parallel processing backends including future.",
-      "Depends": [
-        "R (>= 3.2.0)"
-      ],
-      "Imports": [
-        "parallel"
-      ],
-      "Suggests": [
-        "shiny",
-        "future",
-        "future.apply"
-      ],
-      "License": "GPL (>= 2)",
-      "URL": "https://github.com/psolymos/pbapply",
-      "BugReports": "https://github.com/psolymos/pbapply/issues",
-      "NeedsCompilation": "no",
-      "Author": "Peter Solymos [aut, cre] (<https://orcid.org/0000-0001-7337-1740>), Zygmunt Zawadzki [aut], Henrik Bengtsson [ctb], R Core Team [cph, ctb]",
-      "Repository": "CRAN"
     },
     "pillar": {
       "Package": "pillar",
@@ -4131,39 +3788,6 @@
       "Author": "Gabor Csardi [aut, cre], Bill Denney [ctb] (<https://orcid.org/0000-0002-5759-428X>), Christophe Regouby [ctb]",
       "Maintainer": "Gabor Csardi <csardi.gabor@gmail.com>",
       "Repository": "RSPM"
-    },
-    "prismadiagramR": {
-      "Package": "prismadiagramR",
-      "Version": "1.0.0",
-      "Source": "Repository",
-      "Title": "Creates a Prisma Diagram using 'DiagrammeR'",
-      "Authors@R": "person(given = \"Lionel\", family = \"Duarte\", role = c(\"aut\", \"cre\"), email = \"lduarte85718@gmail.com\", comment = c(ORCID = \"0000-0003-0296-4949\"))",
-      "Description": "Creates 'PRISMA' <http://prisma-statement.org/> diagram from a minimal dataset of included and excluded studies and allows for more custom diagrams. 'PRISMA' diagrams are used to track the identification, screening, eligibility, and inclusion of studies in a systematic review.",
-      "License": "MIT + file LICENSE",
-      "URL": "https://github.com/ltrainstg/prismadiagramR",
-      "BugReports": "https://github.com/ltrainstg/prismadiagramR/issues",
-      "Encoding": "UTF-8",
-      "LazyData": "true",
-      "Suggests": [
-        "testthat",
-        "knitr",
-        "rmarkdown",
-        "covr",
-        "flextable"
-      ],
-      "RoxygenNote": "7.1.0",
-      "VignetteBuilder": "knitr",
-      "Imports": [
-        "dplyr",
-        "DiagrammeR"
-      ],
-      "Depends": [
-        "R (>= 2.10)"
-      ],
-      "NeedsCompilation": "no",
-      "Author": "Lionel Duarte [aut, cre] (<https://orcid.org/0000-0003-0296-4949>)",
-      "Maintainer": "Lionel Duarte <lduarte85718@gmail.com>",
-      "Repository": "CRAN"
     },
     "processx": {
       "Package": "processx",
@@ -4901,30 +4525,6 @@
       "SystemRequirements": "pandoc (>= 1.14) - http://pandoc.org",
       "NeedsCompilation": "no",
       "Author": "JJ Allaire [aut], Yihui Xie [aut, cre] (<https://orcid.org/0000-0003-0645-5666>), Jonathan McPherson [aut], Javier Luraschi [aut], Kevin Ushey [aut], Aron Atkins [aut], Hadley Wickham [aut], Joe Cheng [aut], Winston Chang [aut], Richard Iannone [aut] (<https://orcid.org/0000-0003-3925-190X>), Andrew Dunning [ctb] (<https://orcid.org/0000-0003-0464-5036>), Atsushi Yasumoto [ctb, cph] (<https://orcid.org/0000-0002-8335-495X>, Number sections Lua filter), Barret Schloerke [ctb], Carson Sievert [ctb] (<https://orcid.org/0000-0002-4958-2844>), Christophe Dervieux [ctb], Devon Ryan [ctb] (<https://orcid.org/0000-0002-8549-0971>), Frederik Aust [ctb] (<https://orcid.org/0000-0003-4900-788X>), Jeff Allen [ctb], JooYoung Seo [ctb] (<https://orcid.org/0000-0002-4064-6012>), Malcolm Barrett [ctb], Rob Hyndman [ctb], Romain Lesur [ctb], Roy Storey [ctb], Ruben Arslan [ctb], Sergio Oller [ctb], RStudio, PBC [cph], jQuery UI contributors [ctb, cph] (jQuery UI library; authors listed in inst/rmd/h/jqueryui-AUTHORS.txt), Mark Otto [ctb] (Bootstrap library), Jacob Thornton [ctb] (Bootstrap library), Bootstrap contributors [ctb] (Bootstrap library), Twitter, Inc [cph] (Bootstrap library), Alexander Farkas [ctb, cph] (html5shiv library), Scott Jehl [ctb, cph] (Respond.js library), Ivan Sagalaev [ctb, cph] (highlight.js library), Greg Franko [ctb, cph] (tocify library), John MacFarlane [ctb, cph] (Pandoc templates), Google, Inc. [ctb, cph] (ioslides library), Dave Raggett [ctb] (slidy library), W3C [cph] (slidy library), Dave Gandy [ctb, cph] (Font-Awesome), Ben Sperry [ctb] (Ionicons), Drifty [cph] (Ionicons), Aidan Lister [ctb, cph] (jQuery StickyTabs), Benct Philip Jonsson [ctb, cph] (pagebreak Lua filter), Albert Krewinkel [ctb, cph] (pagebreak Lua filter)",
-      "Repository": "CRAN"
-    },
-    "robumeta": {
-      "Package": "robumeta",
-      "Version": "2.0",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Robust Variance Meta-Regression",
-      "Date": "2017-05-29",
-      "Authors@R": "c( person(\"Zachary\",\"Fisher\", email = \"fish.zachary@gmail.com\", role = c(\"aut\", \"cre\")), person(\"Elizabeth\", \"Tipton\", role = \"aut\"), person(\"Hou\", \"Zhipeng\", role = \"aut\") )",
-      "Suggests": [
-        "clubSandwich",
-        "R.rsp"
-      ],
-      "Description": "Functions for conducting robust variance estimation (RVE) meta-regression using both large and small sample RVE estimators under various weighting schemes. These methods are distribution free and provide valid point estimates, standard errors and hypothesis tests even when the degree and structure of dependence between effect sizes is unknown. Also included are functions for conducting sensitivity analyses under correlated effects weighting and producing RVE-based forest plots.",
-      "URL": "https://github.com/zackfisher/robumeta",
-      "BugReports": "https://github.com/zackfisher/robumeta/issues",
-      "License": "GPL-2",
-      "LazyData": "true",
-      "RoxygenNote": "6.0.1",
-      "VignetteBuilder": "R.rsp",
-      "NeedsCompilation": "no",
-      "Author": "Zachary Fisher [aut, cre], Elizabeth Tipton [aut], Hou Zhipeng [aut]",
-      "Maintainer": "Zachary Fisher <fish.zachary@gmail.com>",
       "Repository": "CRAN"
     },
     "roxygen2": {
@@ -6113,54 +5713,6 @@
       "Repository": "RSPM",
       "ExperimentalWindowsRuntime": "ucrt"
     },
-    "viridis": {
-      "Package": "viridis",
-      "Version": "0.6.2",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Colorblind-Friendly Color Maps for R",
-      "Authors@R": "c( person(\"Simon\", \"Garnier\", email = \"garnier@njit.edu\", role = c(\"aut\", \"cre\")), person(\"Noam\", \"Ross\", email = \"noam.ross@gmail.com\", role = c(\"ctb\", \"cph\")), person(\"Bob\", \"Rudis\", email = \"bob@rud.is\", role = c(\"ctb\", \"cph\")), person(\"Marco\", \"Sciaini\", email = \"sciaini.marco@gmail.com\", role = c(\"ctb\", \"cph\")), person(\"Antônio Pedro\", \"Camargo\", role = c(\"ctb\", \"cph\")), person(\"Cédric\", \"Scherer\", email = \"scherer@izw-berlin.de\", role = c(\"ctb\", \"cph\")) )",
-      "Maintainer": "Simon Garnier <garnier@njit.edu>",
-      "Description": "Color maps designed to improve graph readability for readers with  common forms of color blindness and/or color vision deficiency. The color  maps are also perceptually-uniform, both in regular form and also when  converted to black-and-white for printing. This package also contains  'ggplot2' bindings for discrete and continuous color and fill scales. A lean version of the package called 'viridisLite' that does not include the  'ggplot2' bindings can be found at  <https://cran.r-project.org/package=viridisLite>.",
-      "License": "MIT + file LICENSE",
-      "Encoding": "UTF-8",
-      "Depends": [
-        "R (>= 2.10)",
-        "viridisLite (>= 0.4.0)"
-      ],
-      "Imports": [
-        "stats",
-        "ggplot2 (>= 1.0.1)",
-        "gridExtra"
-      ],
-      "Suggests": [
-        "hexbin (>= 1.27.0)",
-        "scales",
-        "MASS",
-        "knitr",
-        "dichromat",
-        "colorspace",
-        "raster",
-        "rasterVis",
-        "httr",
-        "mapproj",
-        "vdiffr",
-        "svglite (>= 1.2.0)",
-        "testthat",
-        "covr",
-        "rmarkdown",
-        "rgdal",
-        "maps"
-      ],
-      "LazyData": "true",
-      "VignetteBuilder": "knitr",
-      "URL": "https://sjmgarnier.github.io/viridis/, https://github.com/sjmgarnier/viridis/",
-      "BugReports": "https://github.com/sjmgarnier/viridis/issues",
-      "RoxygenNote": "7.1.2",
-      "NeedsCompilation": "no",
-      "Author": "Simon Garnier [aut, cre], Noam Ross [ctb, cph], Bob Rudis [ctb, cph], Marco Sciaini [ctb, cph], Antônio Pedro Camargo [ctb, cph], Cédric Scherer [ctb, cph]",
-      "Repository": "CRAN"
-    },
     "viridisLite": {
       "Package": "viridisLite",
       "Version": "0.4.2",
@@ -6188,50 +5740,6 @@
       "NeedsCompilation": "no",
       "Author": "Simon Garnier [aut, cre], Noam Ross [ctb, cph], Bob Rudis [ctb, cph], Marco Sciaini [ctb, cph], Antônio Pedro Camargo [ctb, cph], Cédric Scherer [ctb, cph]",
       "Repository": "RSPM"
-    },
-    "visNetwork": {
-      "Package": "visNetwork",
-      "Version": "2.1.2",
-      "Source": "Repository",
-      "Title": "Network Visualization using 'vis.js' Library",
-      "Authors@R": "c( person(family = \"Almende B.V. and Contributors\", role = c(\"aut\", \"cph\"), comment = \"vis.js library in htmlwidgets/lib, https://visjs.org/, https://github.com/visjs/vis-network\"), person(\"Benoit\", \"Thieurmel\", role = c(\"aut\", \"cre\"), comment = \"R interface\", email = \"bthieurmel@gmail.com\") )",
-      "Maintainer": "Benoit Thieurmel <bthieurmel@gmail.com>",
-      "Description": "Provides an R interface to the 'vis.js' JavaScript charting library. It allows an interactive visualization of networks.",
-      "BugReports": "https://github.com/datastorm-open/visNetwork/issues",
-      "URL": "https://datastorm-open.github.io/visNetwork/",
-      "Depends": [
-        "R (>= 3.0)"
-      ],
-      "Imports": [
-        "htmlwidgets",
-        "htmltools",
-        "jsonlite",
-        "magrittr",
-        "utils",
-        "methods",
-        "grDevices",
-        "stats"
-      ],
-      "License": "MIT + file LICENSE",
-      "Suggests": [
-        "knitr",
-        "rmarkdown",
-        "webshot",
-        "igraph",
-        "rpart",
-        "shiny",
-        "shinyWidgets",
-        "colourpicker",
-        "sparkline",
-        "ggraph",
-        "tidygraph",
-        "flashClust"
-      ],
-      "VignetteBuilder": "knitr, rmarkdown",
-      "RoxygenNote": "7.1.2",
-      "NeedsCompilation": "no",
-      "Author": "Almende B.V. and Contributors [aut, cph] (vis.js library in htmlwidgets/lib, https://visjs.org/, https://github.com/visjs/vis-network), Benoit Thieurmel [aut, cre] (R interface)",
-      "Repository": "CRAN"
     },
     "vroom": {
       "Package": "vroom",
@@ -6627,8 +6135,7 @@
       "URL": "https://github.com/vubiostat/r-yaml/",
       "BugReports": "https://github.com/vubiostat/r-yaml/issues",
       "NeedsCompilation": "yes",
-      "Repository": "RSPM",
-      "Encoding": "UTF-8",
+      "Repository": "CRAN",
       "ExperimentalWindowsRuntime": "ucrt"
     },
     "zip": {
