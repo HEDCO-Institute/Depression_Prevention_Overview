@@ -23,8 +23,9 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-# Install renv for reproducible environment
+# Install renv and here for reproducible environment
 if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
+if (!requireNamespace("here", quietly = TRUE)) install.packages("here")
 
 # Load environment
 renv::load(here::here("publications", "2024_JCCP"))
