@@ -14,7 +14,7 @@ output: html_document
 # # # Install and load required packages
 # pacman::p_load(rmarkdown, devtools, here, readxl, janitor, tidyverse, openxlsx, robumeta, metafor, lubridate, gt, webshot2, DiagrammeR, prismadiagramR, stringi, htmltools, bib2df) 
 # pacman::p_load_gh("thdiakon/ccaR", "mcguinlu/robvis") #from github
-#renv::install("thdiakon/ccaR")
+# renv::install("thdiakon/ccaR")
 # # Create snapshot of packages for reproducible environment
 # renv::snapshot()
 
@@ -22,7 +22,6 @@ output: html_document
 ```
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 # Install renv and here for reproducible environment
 if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
 if (!requireNamespace("here", quietly = TRUE)) install.packages("here")
@@ -36,6 +35,7 @@ renv::restore(here::here("publications", "2024_JCCP"))
 ```
 
 ```{r libraries}
+knitr::opts_chunk$set(echo = TRUE, warnings = FALSE)
 # Load required packages directly (since restore installs them)
 library(rmarkdown)
 library(devtools)
