@@ -46,7 +46,7 @@ The analysis script used to generate quantitative results for this publication i
 ### **Data Citation**
 Please cite this version of the data as follows:
 
-Trevino, S. D., Grant, S., Schweer-Collins, M., Day, E., Steinka-Fry, K., & Tanner-Smith, E. E. (2024). Data for "School-Based Interventions for Primary and Secondary Prevention of Depression: An Overview of Systematic Reviews with Meta-Analyses." (OSF)[https://osf.io/kg57y/]. doi:10.17605/OSF.IO/KG57Y 
+Trevino, S. D., Grant, S., Schweer-Collins, M., Day, E., Steinka-Fry, K., & Tanner-Smith, E. E. (2024). Data for "School-Based Interventions for Primary and Secondary Prevention of Depression: An Overview of Systematic Reviews with Meta-Analyses." [OSF](https://osf.io/kg57y/). doi:10.17605/OSF.IO/KG57Y 
 
 ### **Handling of Missing Data**
 - Missing values in the datasets are coded as `-999`, `Not Reported`, or `NA` and indicate those values were not reported in studies/reviews.
